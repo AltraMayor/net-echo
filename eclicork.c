@@ -14,7 +14,6 @@
 #include <netinet/in.h>
 #include <linux/udp.h>
 
-/* XXX: Make into command-line argument. */
 #define CORK_SIZE 64
 
 static int bytes_corked; /* Number of corked bytes in current packet. */
@@ -68,7 +67,7 @@ static void empty_cork(int s, const struct sockaddr_in *srv)
 	cork(s);
 	bytes_corked = 0;
 }
-	
+
 /**
  * process_file(): Sets up the input and output files, uncorks the current
  * packet, and then processes the desired file.
