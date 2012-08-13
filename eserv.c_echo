@@ -20,6 +20,7 @@ static void echo(int s, int msg_len, const struct sockaddr_in *srv)
 {
 	char *msg = alloca(msg_len);
 	recv_packet(s, msg, msg_len, srv);
+	printf("Received packet: %s\n", msg);
 	send_packet(s, msg, msg_len, srv);
 }
 

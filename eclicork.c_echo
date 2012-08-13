@@ -22,7 +22,7 @@ static int bytes_corked; /* Number of corked bytes in current packet. */
 /**
  * cork(): Cork socket to CORK_SIZE bytes.
  */
-static inline void cork(int s)
+static void cork(int s)
 {
 	int one = 1;
 	if (setsockopt(s, IPPROTO_UDP, UDP_CORK, &one, sizeof(int)) < 0)
@@ -32,7 +32,7 @@ static inline void cork(int s)
 /**
  * uncork(): Uncork socket.
  */
-static inline void uncork(int s)
+static void uncork(int s)
 {
 	int zero = 0;
 	if (setsockopt(s, IPPROTO_UDP, UDP_CORK, &zero, sizeof(int)) < 0)
@@ -78,12 +78,12 @@ static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
 	FILE *orig, *copy;
 	int n_read, n_rcvd;
 
-	char *line = NULL;
-	size_t line_len = 0;
-
 	int name_len = strlen(orig_name) + strlen(FILE_APPEND) + 1;
 	char *copy_name = malloc(name_len);
 	setup_output_file(orig_name, copy_name, name_len);
+
+	char *line = NULL;
+	size_t line_len = 0;
 
 	if ((orig = fopen(orig_name, "rb")) == NULL)
 		perrorq("input fopen");
@@ -96,6 +96,7 @@ static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
 
 	uncork(s);
 
+	/* XXX: Make same change as necessary in ecli.c. */
 	if ((n_read = getdelim(&line, &line_len, EOF, orig)) > 0)
 		__process_file(s, srv, line, n_read, copy, CORK_SIZE);
 
@@ -107,7 +108,6 @@ static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
 	if (fclose(orig) != 0)
 		perrorq("input fclose");
 
-	free(line);
 	free(copy_name);
 }
 
@@ -116,23 +116,23 @@ static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
  * this function either splits up the message into separate packets or fits the
  * message into the current packet.
  */
-static void process_text(int s, const struct sockaddr_in *srv, char *in, int n)
+/* XXX: Re-write algorithm to make it better. */
+static void process_text(int s, struct sockaddr_in *srv, char *in, int n_read)
 {
-	int bytes_avail = CORK_SIZE - bytes_corked;
-
-	if (n > bytes_avail) {
+	if (n_read + bytes_corked > CORK_SIZE) {
+		int bytes_avail = CORK_SIZE - bytes_corked;
 		send_packet(s, in, bytes_avail, srv);
 		bytes_corked += bytes_avail;
-		empty_cork(s, srv);
-		n -= bytes_avail;
-		process_text(s, srv, in + bytes_avail, n);
-	} else {
-		send_packet(s, in, n, srv);
-		bytes_corked += n;
 
-		if (bytes_corked == CORK_SIZE)
-			empty_cork(s, srv);
+		empty_cork(s, srv);
+		process_text(s, srv, in + bytes_avail, n_read - bytes_avail);
 	}
+
+	send_packet(s, in, n_read, srv);
+	bytes_corked += n_read;
+
+	if (bytes_corked == CORK_SIZE)
+		empty_cork(s, srv);
 }
 
 int main(int argc, char *argv[])
@@ -165,6 +165,9 @@ int main(int argc, char *argv[])
 
 		strtok(input, "\n");
 
+		if (strcmp(input, "-q") == 0)	/* Quit client. */
+			break;
+
 		cork(s);
 
 		if (is_file(input))
@@ -174,8 +177,6 @@ int main(int argc, char *argv[])
 
 		puts("\n");
 	}
-
-	printf("While-loop finished\n");
 
 	if (close(s) == -1)
 		perrorq("close");
