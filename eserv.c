@@ -9,8 +9,10 @@
  *
  */
 
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "eutils.h"
-#include <sys/socket.h>
 
 /**
  * echo(): Receive a message of msg_len size, allocate memory using alloca(),

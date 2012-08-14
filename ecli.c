@@ -9,9 +9,14 @@
  *
  */
 
-#include "eutils.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include "eutils.h"
 
 /**
  * process_file(): Sets up the input and output files and uses a loop to

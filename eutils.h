@@ -14,10 +14,8 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 /* 0xffff - sizeof(Maximum UDP header) */
 #define MAX_UDP (0xffff - 8)
