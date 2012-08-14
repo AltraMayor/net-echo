@@ -9,6 +9,7 @@
  *
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -37,25 +38,22 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-		perrorq("socket");
+	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	assert(s >= 0);
 
 	memset((char *)&srv, 0, sizeof(struct sockaddr_in));
 	srv.sin_family = AF_INET;
 	srv.sin_port = htons(atoi(argv[1]));
 	srv.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	if (bind(s, (struct sockaddr *)&srv, sizeof(struct sockaddr_in)) == -1)
-		perrorq("bind");
+	assert(!bind(s, (struct sockaddr *)&srv, sizeof(struct sockaddr_in)));
 
 	while (1) {
-		if ((len = recvfrom(s, buf, MAX_UDP, MSG_PEEK, NULL, 0)) == -1)
-			perrorq("recvfrom peek");
+		len = recvfrom(s, buf, MAX_UDP, MSG_PEEK, NULL, 0);
+		assert(len >= 0);
 		echo(s, len, &cli);
 	}
-
-	if (close(s) == -1)
-		perrorq("close");
+	assert(!close(s));
 
 	return 0;
 }

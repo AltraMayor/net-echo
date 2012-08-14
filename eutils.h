@@ -24,8 +24,6 @@ static inline int is_file(const char *x)
 	return (*x == '-') && (*(x + 1) == 'f');
 }
 
-void perrorq(const char *s);
-
 void setup_output_file(const char *orig, char *copy, int buflen);
 
 void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv);

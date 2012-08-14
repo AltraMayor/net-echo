@@ -9,6 +9,7 @@
  *
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -34,21 +35,17 @@ static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
 	char *copy_name = malloc(name_len);
 	setup_output_file(orig_name, copy_name, name_len);
 
-	if ((orig = fopen(orig_name, "rb")) == NULL)
-		perrorq("input fopen");
+	orig = fopen(orig_name, "rb");
+	assert(!orig);
 
-	if ((copy = fopen(copy_name, "wb")) == NULL)
-		perrorq("output fopen");
+	copy = fopen(copy_name, "wb");
+	assert(!copy);
 
 	if ((n_read = getdelim(&line, &line_len, EOF, orig)) > 0)
 		__process_file(s, srv, line, n_read, copy, n_read);
 
-	if (fclose(copy) != 0)
-		perrorq("output fclose");
-
-	if (fclose(orig) != 0)
-		perrorq("input fclose");
-
+	assert(!fclose(copy));
+	assert(!fclose(orig));
 	free(line);
 	free(copy_name);
 }
@@ -75,21 +72,17 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-		perrorq("socket");
+	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	assert(s >= 0);
 
 	memset((char *)&srv, 0, sizeof(struct sockaddr_in));
 	srv.sin_family = AF_INET;
 	srv.sin_port = htons(atoi(argv[2]));
-
-	if (inet_aton(argv[1], &srv.sin_addr) == 0) {
-		fprintf(stderr, "inet_aton() failed\n");
-		exit(1);
-	}
+	assert(inet_aton(argv[1], &srv.sin_addr));
 
 	while (1) {
-		if ((n_read = getline(&input, &line_size, stdin)) < 0)
-			perrorq("getline");
+		n_read = getline(&input, &line_size, stdin);
+		assert(n_read >= 0);
 
 		if (n_read == 1)		/* Empty message. */
 			continue;
@@ -104,10 +97,7 @@ int main(int argc, char *argv[])
 		puts("\n");
 	}
 
-	if (close(s) == -1)
-		perrorq("close");
-
+	assert(!close(s));
 	free(input);
-
 	return 0;
 }

@@ -8,17 +8,9 @@
  *
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include "eutils.h"
-
-/**
- * perrorq(): Print the given error and quit.
- */
-void perrorq(const char *s)
-{
-	perror(s);
-	exit(1);
-}
 
 /**
  * setup_output_file(): Copy the name of the input file and append "_echo" to
@@ -26,8 +18,7 @@ void perrorq(const char *s)
  */
 void setup_output_file(const char *orig, char *copy, int buflen)
 {
-	if (snprintf(copy, buflen, "%s%s", orig, FILE_APPEND) != buflen -1)
-		perrorq("setup_output_file buffer error");
+	assert(snprintf(copy, buflen, "%s%s", orig, FILE_APPEND) == buflen -1);
 }
 
 /**
@@ -35,9 +26,8 @@ void setup_output_file(const char *orig, char *copy, int buflen)
  */
 void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv)
 {
-	if (sendto(s, buf, n, 0, (struct sockaddr *)srv,
-			sizeof(struct sockaddr_in)) == -1)
-		perrorq("sendto");
+	assert(sendto(s, buf, n, 0, (struct sockaddr *)srv,
+		sizeof(struct sockaddr_in)) >= 0);
 }
 
 /**
@@ -48,9 +38,8 @@ int recv_packet(int s, char *buf, int n, const struct sockaddr_in *srv)
 	int read;
 	unsigned int len = sizeof(struct sockaddr_in);
 
-	if ((read = recvfrom(s, buf, n, 0, (struct sockaddr *)srv, &len)) == -1)
-		perrorq("recvfrom");
-
+	read = recvfrom(s, buf, n, 0, (struct sockaddr *)srv, &len);
+	assert(read >= 0);
 	return read;
 }
 
@@ -65,12 +54,9 @@ void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
         unsigned int len = sizeof(struct sockaddr_in);
 
         n_read = recvfrom(s, out, n, 0, (struct sockaddr *)srv, &len);
+	assert(n_read >= 0);
 
-        if (n_read == -1)
-                perrorq("recvfrom");
-
-        if (fwrite(out, sizeof(char), n_read, copy) < 0)
-                perrorq("fwrite");
+        assert(fwrite(out, sizeof(char), n_read, copy) >= 0);
 }
 
 /**
