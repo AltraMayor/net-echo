@@ -11,8 +11,6 @@
 #ifndef _ECHO_UTILS_H
 #define _ECHO_UTILS_H
 
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
