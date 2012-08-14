@@ -25,7 +25,7 @@
 static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
 {
 	FILE *orig, *copy;
-	int n_read, n_rcvd;
+	int n_read;
 
 	char *line = NULL;
 	size_t line_len = 0;

@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (close(s) == -1)
-		print_error("close");
+		perrorq("close");
 
 	return 0;
 }
