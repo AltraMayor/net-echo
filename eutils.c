@@ -14,7 +14,7 @@
 /**
  * perrorq(): Print the given error and quit.
  */
-void perrorq(char *s)
+void perrorq(const char *s)
 {
 	perror(s);
 	exit(1);
@@ -24,7 +24,7 @@ void perrorq(char *s)
  * setup_output_file(): Copy the name of the input file and append "_echo" to
  * it to get the name of the output file.
  */
-void setup_output_file(char *orig, char *copy, int buflen)
+void setup_output_file(const char *orig, char *copy, int buflen)
 {
 	if (snprintf(copy, buflen, "%s%s", orig, FILE_APPEND) != buflen -1)
 		perrorq("setup_output_file buffer error");
@@ -33,7 +33,7 @@ void setup_output_file(char *orig, char *copy, int buflen)
 /**
  * send_packet(): Send a packet via the given socket.
  */
-void send_packet(int s, char *buf, int n, const struct sockaddr_in *srv)
+void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv)
 {
 	if (sendto(s, buf, n, 0, (struct sockaddr *)srv,
 			sizeof(struct sockaddr_in)) == -1)
@@ -78,7 +78,7 @@ void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
  * the output to a given file. With a corked socket, max := CORK_SIZE, else
  * max := UDP_MAX.
  */
-void __process_file(int s, const struct sockaddr_in *srv, char *line,
+void __process_file(int s, const struct sockaddr_in *srv, const char *line,
 					int n_read, FILE *copy, int max)
 {
         int bytes_to_send = 0;
