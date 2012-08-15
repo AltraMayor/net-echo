@@ -62,20 +62,18 @@ static void empty_cork(int s, const struct sockaddr_in *srv)
 static void process_text(int s, const struct sockaddr_in *srv, char *in, int n)
 {
 	int bytes_avail = CORK_SIZE - bytes_corked;
+	int bytes_this_time = n > bytes_avail ? bytes_avail : n;
 
-	if (n > bytes_avail) {
-		send_packet(s, in, bytes_avail, srv);
-		bytes_corked += bytes_avail;
+	send_packet(s, in, bytes_this_time, srv);
+	bytes_corked += bytes_this_time;
+
+	if (bytes_corked == CORK_SIZE)
 		empty_cork(s, srv);
-		n -= bytes_avail;
-		process_text(s, srv, in + bytes_avail, n);
-	} else {
-		send_packet(s, in, n, srv);
-		bytes_corked += n;
 
-		if (bytes_corked == CORK_SIZE)
-			empty_cork(s, srv);
-	}
+	n -= bytes_this_time;
+	assert(n >= 0);
+	if (n)
+		process_text(s, srv, in + bytes_this_time, n);
 }
 
 int main(int argc, char *argv[])
