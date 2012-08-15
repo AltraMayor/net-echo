@@ -19,19 +19,21 @@
  * echo(): Receive a message of msg_len size, allocate memory using alloca(),
  * and echo the message back to the source.
  */
-static void echo(int s, int msg_len, const struct sockaddr_in *srv)
+static void echo(int s, int msg_len)
 {
+	struct sockaddr_in cli;
+	unsigned int len = sizeof(cli);
 	char *msg = alloca(msg_len);
-	recv_packet(s, msg, msg_len, srv);
-	send_packet(s, msg, msg_len, srv);
+	int read = recvfrom(s, msg, msg_len, 0, (struct sockaddr *)&cli, &len);
+	assert(read >= 0);
+	assert(len == sizeof(cli));
+	send_packet(s, msg, msg_len, &cli);
 }
 
 int main(int argc, char *argv[])
 {
 	struct sockaddr_in srv;
-	struct sockaddr_in cli;
-	char buf[0];
-	int s, len;
+	int s;
 
 	if (argc != 2) {
 		printf("usage: ./server port\n");
@@ -46,12 +48,12 @@ int main(int argc, char *argv[])
 	srv.sin_port = htons(atoi(argv[1]));
 	srv.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	assert(!bind(s, (struct sockaddr *)&srv, sizeof(struct sockaddr_in)));
+	assert(!bind(s, (const struct sockaddr *)&srv, sizeof(srv)));
 
 	while (1) {
-		len = recvfrom(s, buf, MAX_UDP, MSG_PEEK, NULL, 0);
+		int len = recvfrom(s, NULL, 0, MSG_PEEK, NULL, NULL);
 		assert(len >= 0);
-		echo(s, len, &cli);
+		echo(s, len);
 	}
 	assert(!close(s));
 

@@ -37,19 +37,6 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv)
 }
 
 /**
- * recv_packet(): Receive a packet via the given socket.
- */
-int recv_packet(int s, char *buf, int n, const struct sockaddr_in *srv)
-{
-	int read;
-	unsigned int len = sizeof(struct sockaddr_in);
-
-	read = recvfrom(s, buf, n, 0, (struct sockaddr *)srv, &len);
-	assert(read >= 0);
-	return read;
-}
-
-/**
  * recv_write(): Receive a packet via the given socket and write to the
  * given file.
  */
