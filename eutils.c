@@ -32,8 +32,8 @@ void check_cli_params(int argc, char * const argv[])
  */
 void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv)
 {
-	assert(sendto(s, buf, n, 0, (struct sockaddr *)srv,
-		sizeof(struct sockaddr_in)) >= 0);
+	assert(sendto(s, buf, n, 0, (const struct sockaddr *)srv,
+		sizeof(*srv)) >= 0);
 }
 
 /**
@@ -44,7 +44,7 @@ void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
 {
         int n_read;
         char *out = alloca(n);
-        unsigned int len = sizeof(struct sockaddr_in);
+        unsigned int len = sizeof(*srv);
 
         n_read = recvfrom(s, out, n, 0, (struct sockaddr *)srv, &len);
 	assert(n_read >= 0);
