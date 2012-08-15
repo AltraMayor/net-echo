@@ -42,12 +42,15 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv)
  */
 void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
 {
-        int n_read;
         char *out = alloca(n);
-        unsigned int len = sizeof(*srv);
-
-        n_read = recvfrom(s, out, n, 0, (struct sockaddr *)srv, &len);
+	struct sockaddr_in src;
+        unsigned int len = sizeof(src);
+        int n_read = recvfrom(s, out, n, 0, (struct sockaddr *)&src, &len);
 	assert(n_read >= 0);
+
+	/* Make sure that we're reading from the server. */
+	assert(len == sizeof(src));
+	assert(!memcmp(&src, srv, len));
 
         assert(fwrite(out, sizeof(char), n_read, copy) >= 0);
 }
