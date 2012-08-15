@@ -25,9 +25,10 @@ static inline int is_file(const char *x)
 
 void check_cli_params(int argc, char * const argv[]);
 
-void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv);
+void send_packet(int s, const char *buf, int n, const struct sockaddr_in *dst);
 
-void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv);
+void recv_write(int s, FILE *copy, int n,
+	const struct sockaddr_in *expected_src);
 
 void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
 	int chunk_size);

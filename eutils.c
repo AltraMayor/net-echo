@@ -30,17 +30,18 @@ void check_cli_params(int argc, char * const argv[])
 /**
  * send_packet(): Send a packet via the given socket.
  */
-void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv)
+void send_packet(int s, const char *buf, int n, const struct sockaddr_in *dst)
 {
-	assert(sendto(s, buf, n, 0, (const struct sockaddr *)srv,
-		sizeof(*srv)) >= 0);
+	assert(sendto(s, buf, n, 0, (const struct sockaddr *)dst,
+		sizeof(*dst)) >= 0);
 }
 
 /**
  * recv_write(): Receive a packet via the given socket and write to the
  * given file.
  */
-void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
+void recv_write(int s, FILE *copy, int n,
+	const struct sockaddr_in *expected_src)
 {
         char *out = alloca(n);
 	struct sockaddr_in src;
@@ -50,7 +51,7 @@ void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
 
 	/* Make sure that we're reading from the server. */
 	assert(len == sizeof(src));
-	assert(!memcmp(&src, srv, len));
+	assert(!memcmp(&src, expected_src, len));
 
         assert(fwrite(out, sizeof(char), n_read, copy) >= 0);
 }
