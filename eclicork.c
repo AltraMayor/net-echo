@@ -43,24 +43,6 @@ static inline void uncork(int s)
 }
 
 /**
- * check_validity(): Check the validity of the program; ensure that the
- * correct number of arguments have been given and that the CORK_SIZE is
- * not greater than the maximum size of a UDP packet.
- */
-static inline void check_validity(int argc)
-{
-	if (argc != 3) {
-		printf("usage: ./corkclient ip port\n");
-		exit(1);
-	}
-
-	if (CORK_SIZE > MAX_UDP) {
-		printf("cork size > maximum UDP packet size\n");
-		exit(1);
-	}
-}
-
-/**
  * empty_cork(): Empties a corked socket by uncorking, receiving the resulting
  * packet, and writing it to a file before corking the socket again.
  */
@@ -104,7 +86,7 @@ int main(int argc, char *argv[])
 	char *input = NULL;
 	size_t line_size = 0;
 
-	check_validity(argc);
+	check_cli_params(argc, argv);
 
 	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	assert(s >= 0);

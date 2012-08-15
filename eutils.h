@@ -23,6 +23,8 @@ static inline int is_file(const char *x)
 	return (*x == '-') && (*(x + 1) == 'f');
 }
 
+void check_cli_params(int argc, char * const argv[]);
+
 void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv);
 
 int recv_packet(int s, char *buf, int n, const struct sockaddr_in *srv);

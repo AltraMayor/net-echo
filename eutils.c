@@ -16,6 +16,18 @@
 #define FILE_APPEND "_echo"
 
 /**
+ * check_validity(): Check the validity of the program; ensure that the
+ * correct number of arguments have been given.
+ */
+void check_cli_params(int argc, char * const argv[])
+{
+	if (argc != 3) {
+		printf("usage: %s ip port\n", argv[0]);
+		exit(1);
+	}
+}
+
+/**
  * send_packet(): Send a packet via the given socket.
  */
 void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv)

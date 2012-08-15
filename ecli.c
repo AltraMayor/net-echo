@@ -36,10 +36,7 @@ int main(int argc, char *argv[])
 	char *input = NULL;
 	size_t line_size = 0;
 
-	if (argc != 3) {
-		printf("usage: ./client ip port\n");
-		exit(1);
-	}
+	check_cli_params(argc, argv);
 
 	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	assert(s >= 0);
