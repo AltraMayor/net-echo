@@ -15,17 +15,6 @@
 
 #define FILE_APPEND "_echo"
 
-FILE *fopen_copy(const char *orig_name, const char *mode)
-{
-	int name_len = strlen(orig_name) + strlen(FILE_APPEND) + 1;
-	char *copy_name = alloca(name_len);
-
-	assert(snprintf(copy_name, name_len, "%s%s", orig_name, FILE_APPEND)
-		== name_len - 1);
-
-	return fopen(copy_name, mode);
-}
-
 /**
  * send_packet(): Send a packet via the given socket.
  */
@@ -64,13 +53,23 @@ void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
         assert(fwrite(out, sizeof(char), n_read, copy) >= 0);
 }
 
+static FILE *fopen_copy(const char *orig_name, const char *mode)
+{
+	int name_len = strlen(orig_name) + strlen(FILE_APPEND) + 1;
+	char *copy_name = alloca(name_len);
+
+	assert(snprintf(copy_name, name_len, "%s%s", orig_name, FILE_APPEND)
+		== name_len - 1);
+
+	return fopen(copy_name, mode);
+}
+
 /**
  * __process_file(): Is called after each EOF is found in a file to write
- * the output to a given file. With a corked socket, max := CORK_SIZE, else
- * max := UDP_MAX.
+ * the output to a given file.
  */
-void __process_file(int s, const struct sockaddr_in *srv, const char *line,
-					int n_read, FILE *copy, int max)
+static void __process_file(int s, const struct sockaddr_in *srv,
+	const char *line, int n_read, FILE *copy, int max)
 {
         int bytes_sent = 0;
 
@@ -83,4 +82,31 @@ void __process_file(int s, const struct sockaddr_in *srv, const char *line,
                 n_read -= bytes_to_send;
                 bytes_sent += bytes_to_send;
         }
+}
+
+/**
+ * process_file(): Sets up the input and output files and uses a loop to
+ * process the desired file.
+ */
+void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
+	int chunk_size)
+{
+	FILE *orig, *copy;
+	int n_read;
+
+	char *line = NULL;
+	size_t line_len = 0;
+
+	orig = fopen(orig_name, "rb");
+	assert(orig);
+
+	copy = fopen_copy(orig_name, "wb");
+	assert(copy);
+
+	if ((n_read = getdelim(&line, &line_len, EOF, orig)) > 0)
+		__process_file(s, srv, line, n_read, copy, chunk_size);
+
+	assert(!fclose(copy));
+	assert(!fclose(orig));
+	free(line);
 }

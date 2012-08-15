@@ -73,40 +73,6 @@ static void empty_cork(int s, const struct sockaddr_in *srv)
 }
 
 /**
- * process_file(): Sets up the input and output files, uncorks the current
- * packet, and then processes the desired file.
- */
-static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
-{
-	FILE *orig, *copy;
-	int n_read;
-
-	char *line = NULL;
-	size_t line_len = 0;
-
-	orig = fopen(orig_name, "rb");
-	assert(orig != NULL);
-
-	copy = fopen_copy(orig_name, "wb");
-	assert(copy != NULL);
-
-	if (bytes_corked)
-		empty_cork(s, srv);
-
-	uncork(s);
-
-	if ((n_read = getdelim(&line, &line_len, EOF, orig)) > 0)
-		__process_file(s, srv, line, n_read, copy, CORK_SIZE);
-
-	cork(s);
-
-	assert(!fclose(copy));
-	assert(!fclose(orig));
-
-	free(line);
-}
-
-/**
  * process_text(): Depending on whether a packet will exceed CORK_SIZE bytes,
  * this function either splits up the message into separate packets or fits the
  * message into the current packet.
@@ -159,10 +125,15 @@ int main(int argc, char *argv[])
 
 		cork(s);
 
-		if (is_file(input))
-			process_file(s, &srv, input + 3);
-		else
+		if (is_file(input)) {
+			if (bytes_corked)
+				empty_cork(s, &srv);
+			uncork(s);
+			process_file(s, &srv, input + 3, CORK_SIZE);
+			cork(s);
+		} else {
 			process_text(s, &srv, input, n_read - 1);
+		}
 
 		puts("\n");
 	}

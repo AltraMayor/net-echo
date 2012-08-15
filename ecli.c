@@ -20,32 +20,6 @@
 #include "eutils.h"
 
 /**
- * process_file(): Sets up the input and output files and uses a loop to
- * process the desired file.
- */
-static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
-{
-	FILE *orig, *copy;
-	int n_read;
-
-	char *line = NULL;
-	size_t line_len = 0;
-
-	orig = fopen(orig_name, "rb");
-	assert(!orig);
-
-	copy = fopen_copy(orig_name, "wb");
-	assert(!copy);
-
-	if ((n_read = getdelim(&line, &line_len, EOF, orig)) > 0)
-		__process_file(s, srv, line, n_read, copy, n_read);
-
-	assert(!fclose(copy));
-	assert(!fclose(orig));
-	free(line);
-}
-
-/**
  * process_text(): Sends and receives a message from the echo server.
  */
 static void process_text(int s, struct sockaddr_in *srv, char *input, int read)
@@ -85,7 +59,7 @@ int main(int argc, char *argv[])
 		strtok(input, "\n");
 
 		if (is_file(input))
-			process_file(s, &srv, input + 3);
+			process_file(s, &srv, input + 3, MAX_UDP);
 		else
 			process_text(s, &srv, input, n_read - 1);
 
