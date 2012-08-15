@@ -17,14 +17,13 @@
 
 /* 0xffff - sizeof(Maximum UDP header) */
 #define MAX_UDP (0xffff - 8)
-#define FILE_APPEND "_echo"
 
 static inline int is_file(const char *x)
 {
 	return (*x == '-') && (*(x + 1) == 'f');
 }
 
-void setup_output_file(const char *orig, char *copy, int buflen);
+FILE *fopen_copy(const char *orig_name, const char *mode);
 
 void send_packet(int s, const char *buf, int n, const struct sockaddr_in *srv);
 

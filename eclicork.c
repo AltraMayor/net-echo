@@ -84,14 +84,10 @@ static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
 	char *line = NULL;
 	size_t line_len = 0;
 
-	int name_len = strlen(orig_name) + strlen(FILE_APPEND) + 1;
-	char *copy_name = malloc(name_len);
-	setup_output_file(orig_name, copy_name, name_len);
-
 	orig = fopen(orig_name, "rb");
 	assert(orig != NULL);
 
-	copy = fopen(copy_name, "wb");
+	copy = fopen_copy(orig_name, "wb");
 	assert(copy != NULL);
 
 	if (bytes_corked)
@@ -108,7 +104,6 @@ static void process_file(int s, const struct sockaddr_in *srv, char *orig_name)
 	assert(!fclose(orig));
 
 	free(line);
-	free(copy_name);
 }
 
 /**

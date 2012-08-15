@@ -10,15 +10,20 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "eutils.h"
 
-/**
- * setup_output_file(): Copy the name of the input file and append "_echo" to
- * it to get the name of the output file.
- */
-void setup_output_file(const char *orig, char *copy, int buflen)
+#define FILE_APPEND "_echo"
+
+FILE *fopen_copy(const char *orig_name, const char *mode)
 {
-	assert(snprintf(copy, buflen, "%s%s", orig, FILE_APPEND) == buflen -1);
+	int name_len = strlen(orig_name) + strlen(FILE_APPEND) + 1;
+	char *copy_name = alloca(name_len);
+
+	assert(snprintf(copy_name, name_len, "%s%s", orig_name, FILE_APPEND)
+		== name_len - 1);
+
+	return fopen(copy_name, mode);
 }
 
 /**
