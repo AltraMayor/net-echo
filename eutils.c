@@ -72,14 +72,10 @@ void recv_write(int s, FILE *copy, int n, const struct sockaddr_in *srv)
 void __process_file(int s, const struct sockaddr_in *srv, const char *line,
 					int n_read, FILE *copy, int max)
 {
-        int bytes_to_send = 0;
         int bytes_sent = 0;
 
         while (n_read > 0) {
-                if (n_read > max)
-                        bytes_to_send = max;
-                else
-                        bytes_to_send = n_read;
+		int bytes_to_send = n_read > max ? max : n_read;
 
                 send_packet(s, line + bytes_sent, bytes_to_send, srv);
                 recv_write(s, copy, bytes_to_send, srv);
