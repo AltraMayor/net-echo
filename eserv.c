@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	assert(s >= 0);
 
-	memset((char *)&srv, 0, sizeof(struct sockaddr_in));
+	memset(&srv, 0, sizeof(srv));
 	srv.sin_family = AF_INET;
 	srv.sin_port = htons(atoi(argv[1]));
 	srv.sin_addr.s_addr = htonl(INADDR_ANY);

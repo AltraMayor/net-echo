@@ -106,7 +106,7 @@ void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
 	if ((n_read = getdelim(&line, &line_len, EOF, orig)) > 0)
 		__process_file(s, srv, line, n_read, copy, chunk_size);
 
+	free(line);
 	assert(!fclose(copy));
 	assert(!fclose(orig));
-	free(line);
 }
