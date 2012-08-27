@@ -106,6 +106,7 @@ void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
 	assert(fci->nbytes > 0);
 	__process_file(s, srv, fci, chunk_size);
 
+	free(fci->text);
 	assert(!fclose(fci->copy));
 	assert(!fclose(orig));
 }
