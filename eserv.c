@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	assert(!bind(s, (const struct sockaddr *)&srv, sizeof(srv)));
 
 	while (1) {
-		int len = recvfrom(s, NULL, 0, MSG_PEEK, NULL, NULL);
+		int len = recvfrom(s, NULL, 0, MSG_PEEK|MSG_TRUNC, NULL, NULL);
 		assert(len >= 0);
 		echo(s, len);
 	}
