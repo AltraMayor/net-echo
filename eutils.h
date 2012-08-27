@@ -19,9 +19,9 @@
 #define MAX_UDP (0xffff - 8)
 
 struct fc_info {
-        FILE *copy;
-        char *text;
-        int nbytes;
+	FILE *copy;
+	char *text;
+	int nbytes;
 	void (*recv_fn)(int, const struct sockaddr_in *, FILE *, int);
 };
 

@@ -43,15 +43,15 @@ static inline void uncork(int s)
 }
 
 /**
- * empty_cork(): Empties a corked socket by uncorking, receiving the resulting
- * packet, and writing it to a file before corking the socket again.
+ * empty_cork(): Add the number of recently corked bytes, if any, and empty a
+ * corked socket.
  */
-static void empty_cork(int s, const struct sockaddr_in *srv, FILE *copy,
+static void empty_cork(int s, const struct sockaddr_in *srv, FILE *f,
 	int n_sent)
 {
 	bytes_corked += n_sent;
 	uncork(s);
-	recv_write(s, srv, copy, bytes_corked);
+	recv_write(s, srv, f, bytes_corked);
 	cork(s);
 	bytes_corked = 0;
 }
@@ -114,17 +114,13 @@ int main(int argc, char *argv[])
 			if (bytes_corked)
 				empty_cork(s, &srv, stdout, 0);
 
-			uncork(s);
 			process_file(s, &srv, input + 3, CORK_SIZE, &fci);
-			cork(s);
 		} else {
 			process_text(s, &srv, input, n_read - 1);
 		}
 
 		puts("\n");
 	}
-
-	printf("While-loop finished\n");
 
 	free(input);
 	assert(!close(s));
