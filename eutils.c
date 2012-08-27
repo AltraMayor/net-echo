@@ -80,7 +80,7 @@ static void __process_file(int s, const struct sockaddr_in *srv,
 		int bytes_to_send = fci->nbytes > max ? max : fci->nbytes;
 
                 send_packet(s, fci->text + bytes_sent, bytes_to_send, srv);
-		recv_write(s, srv, fci->copy, bytes_to_send);
+		fci->recv_fn(s, srv, fci->copy, bytes_to_send);
 
                 fci->nbytes -= bytes_to_send;
                 bytes_sent += bytes_to_send;
