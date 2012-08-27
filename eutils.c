@@ -15,12 +15,6 @@
 
 #define FILE_APPEND "_echo"
 
-struct fc_info {
-	FILE *copy;
-	char *text;
-	int nbytes;
-};
-
 /**
  * check_validity(): Check the validity of the program; ensure that the
  * correct number of arguments have been given.
@@ -98,21 +92,20 @@ static void __process_file(int s, const struct sockaddr_in *srv,
  * process the desired file.
  */
 void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
-	int chunk_size)
+	int chunk_size, struct fc_info *fci)
 {
-	struct fc_info fci;
 	size_t text_len = 0;
 
 	FILE *orig = fopen(orig_name, "rb");
 	assert(orig);
 
-	fci.copy = fopen_copy(orig_name, "wb");
-	assert(fci.copy);
+	fci->copy = fopen_copy(orig_name, "wb");
+	assert(fci->copy);
 
-	fci.nbytes = getdelim(&fci.text, &text_len, EOF, orig);
-	assert(fci.nbytes > 0);
-	__process_file(s, srv, &fci, chunk_size);
+	fci->nbytes = getdelim(&fci->text, &text_len, EOF, orig);
+	assert(fci->nbytes > 0);
+	__process_file(s, srv, fci, chunk_size);
 
-	assert(!fclose(fci.copy));
+	assert(!fclose(fci->copy));
 	assert(!fclose(orig));
 }
