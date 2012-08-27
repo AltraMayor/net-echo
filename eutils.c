@@ -46,13 +46,13 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr_in *dst)
  * recv_write(): Receive a packet via the given socket and write to the
  * given file.
  */
-void recv_write(int s, FILE *copy, int n,
-	const struct sockaddr_in *expected_src)
+void recv_write(int s, const struct sockaddr_in *expected_src, FILE *copy,
+	int n_sent)
 {
-        char *out = alloca(n);
+        char *out = alloca(n_sent);
 	struct sockaddr_in src;
         unsigned int len = sizeof(src);
-        int n_read = recvfrom(s, out, n, 0, (struct sockaddr *)&src, &len);
+        int n_read = recvfrom(s, out, n_sent, 0, (struct sockaddr *)&src, &len);
 	assert(n_read >= 0);
 
 	/* Make sure that we're reading from the server. */
@@ -86,7 +86,7 @@ static void __process_file(int s, const struct sockaddr_in *srv,
 		int bytes_to_send = fci->nbytes > max ? max : fci->nbytes;
 
                 send_packet(s, fci->text + bytes_sent, bytes_to_send, srv);
-                recv_write(s, fci->copy, bytes_to_send, srv);
+		recv_write(s, srv, fci->copy, bytes_to_send);
 
                 fci->nbytes -= bytes_to_send;
                 bytes_sent += bytes_to_send;

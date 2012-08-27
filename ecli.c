@@ -25,7 +25,7 @@
 static void process_text(int s, struct sockaddr_in *srv, char *input, int read)
 {
 	send_packet(s, input, read, srv);
-	recv_write(s, stdout, read, srv);
+	recv_write(s, srv, stdout, read);
 }
 
 int main(int argc, char *argv[])

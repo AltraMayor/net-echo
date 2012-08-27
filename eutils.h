@@ -27,8 +27,8 @@ void check_cli_params(int argc, char * const argv[]);
 
 void send_packet(int s, const char *buf, int n, const struct sockaddr_in *dst);
 
-void recv_write(int s, FILE *copy, int n,
-	const struct sockaddr_in *expected_src);
+void recv_write(int s, const struct sockaddr_in *expected_src, FILE *copy,
+	int n_sent);
 
 void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
 	int chunk_size);
