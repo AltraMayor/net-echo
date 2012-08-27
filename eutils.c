@@ -40,13 +40,13 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr_in *dst)
  * recv_write(): Receive a packet via the given socket and write to the
  * given file.
  */
-void recv_write(int s, FILE *copy, int n,
-	const struct sockaddr_in *expected_src)
+void recv_write(int s, const struct sockaddr_in *expected_src, FILE *copy,
+	int n_sent)
 {
-        char *out = alloca(n);
+        char *out = alloca(n_sent);
 	struct sockaddr_in src;
         unsigned int len = sizeof(src);
-        int n_read = recvfrom(s, out, n, 0, (struct sockaddr *)&src, &len);
+        int n_read = recvfrom(s, out, n_sent, 0, (struct sockaddr *)&src, &len);
 	assert(n_read >= 0);
 
 	/* Make sure that we're reading from the server. */
@@ -72,17 +72,17 @@ static FILE *fopen_copy(const char *orig_name, const char *mode)
  * the output to a given file.
  */
 static void __process_file(int s, const struct sockaddr_in *srv,
-	const char *line, int n_read, FILE *copy, int max)
+	struct fc_info *fci, int max)
 {
         int bytes_sent = 0;
 
-        while (n_read > 0) {
-		int bytes_to_send = n_read > max ? max : n_read;
+        while (fci->nbytes > 0) {
+		int bytes_to_send = fci->nbytes > max ? max : fci->nbytes;
 
-                send_packet(s, line + bytes_sent, bytes_to_send, srv);
-                recv_write(s, copy, bytes_to_send, srv);
+                send_packet(s, fci->text + bytes_sent, bytes_to_send, srv);
+		recv_write(s, srv, fci->copy, bytes_to_send);
 
-                n_read -= bytes_to_send;
+                fci->nbytes -= bytes_to_send;
                 bytes_sent += bytes_to_send;
         }
 }
@@ -92,24 +92,20 @@ static void __process_file(int s, const struct sockaddr_in *srv,
  * process the desired file.
  */
 void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
-	int chunk_size)
+	int chunk_size, struct fc_info *fci)
 {
-	FILE *orig, *copy;
-	int n_read;
+	size_t text_len = 0;
 
-	char *line = NULL;
-	size_t line_len = 0;
-
-	orig = fopen(orig_name, "rb");
+	FILE *orig = fopen(orig_name, "rb");
 	assert(orig);
 
-	copy = fopen_copy(orig_name, "wb");
-	assert(copy);
+	fci->copy = fopen_copy(orig_name, "wb");
+	assert(fci->copy);
 
-	if ((n_read = getdelim(&line, &line_len, EOF, orig)) > 0)
-		__process_file(s, srv, line, n_read, copy, chunk_size);
+	fci->nbytes = getdelim(&fci->text, &text_len, EOF, orig);
+	assert(fci->nbytes > 0);
+	__process_file(s, srv, fci, chunk_size);
 
-	free(line);
-	assert(!fclose(copy));
+	assert(!fclose(fci->copy));
 	assert(!fclose(orig));
 }

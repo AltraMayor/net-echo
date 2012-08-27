@@ -25,7 +25,7 @@
 static void process_text(int s, struct sockaddr_in *srv, char *input, int read)
 {
 	send_packet(s, input, read, srv);
-	recv_write(s, stdout, read, srv);
+	recv_write(s, srv, stdout, read);
 }
 
 int main(int argc, char *argv[])
@@ -55,10 +55,14 @@ int main(int argc, char *argv[])
 
 		strtok(input, "\n");
 
-		if (is_file(input))
-			process_file(s, &srv, input + 3, MAX_UDP);
-		else
+		if (is_file(input)) {
+			struct fc_info fci;
+			fci.recv_fn = recv_write;
+			process_file(s, &srv, input + 3, MAX_UDP, &fci);
+		}
+		else {
 			process_text(s, &srv, input, n_read - 1);
+		}
 
 		puts("\n");
 	}

@@ -46,10 +46,12 @@ static inline void uncork(int s)
  * empty_cork(): Empties a corked socket by uncorking, receiving the resulting
  * packet, and writing it to a file before corking the socket again.
  */
-static void empty_cork(int s, const struct sockaddr_in *srv)
+static void empty_cork(int s, const struct sockaddr_in *srv, FILE *copy,
+	int n_sent)
 {
+	bytes_corked += n_sent;
 	uncork(s);
-	recv_write(s, stdout, bytes_corked, srv);
+	recv_write(s, srv, copy, bytes_corked);
 	cork(s);
 	bytes_corked = 0;
 }
@@ -68,7 +70,7 @@ static void process_text(int s, const struct sockaddr_in *srv, char *in, int n)
 	bytes_corked += bytes_this_time;
 
 	if (bytes_corked == CORK_SIZE)
-		empty_cork(s, srv);
+		empty_cork(s, srv, stdout, 0);
 
 	n -= bytes_this_time;
 	assert(n >= 0);
@@ -106,10 +108,14 @@ int main(int argc, char *argv[])
 		cork(s);
 
 		if (is_file(input)) {
+			struct fc_info fci;
+			fci.recv_fn = empty_cork;
+
 			if (bytes_corked)
-				empty_cork(s, &srv);
+				empty_cork(s, &srv, stdout, 0);
+
 			uncork(s);
-			process_file(s, &srv, input + 3, CORK_SIZE);
+			process_file(s, &srv, input + 3, CORK_SIZE, &fci);
 			cork(s);
 		} else {
 			process_text(s, &srv, input, n_read - 1);
