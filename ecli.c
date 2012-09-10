@@ -22,7 +22,7 @@
 /**
  * process_text(): Sends and receives a message from the echo server.
  */
-static void process_text(int s, struct sockaddr_in *srv, char *input, int read)
+static void process_text(int s, struct sockaddr *srv, char *input, int read)
 {
 	send_packet(s, input, read, srv);
 	recv_write(s, srv, stdout, read);
@@ -56,9 +56,11 @@ int main(int argc, char *argv[])
 		strtok(input, "\n");
 
 		if (is_file(input))
-			process_file(s, &srv, input + 3, MAX_UDP, recv_write);
+			process_file(s, (struct sockaddr *)&srv,
+				input + 3, MAX_UDP, recv_write);
 		else
-			process_text(s, &srv, input, n_read - 1);
+			process_text(s, (struct sockaddr *)&srv,
+				input, n_read - 1);
 
 		puts("\n");
 	}

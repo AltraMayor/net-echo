@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <netinet/in.h>
 #include "eutils.h"
 
 /**
@@ -21,10 +22,10 @@
  */
 static void echo(int s, int msg_len)
 {
-	struct sockaddr_in cli;
+	struct sockaddr cli;
 	unsigned int len = sizeof(cli);
 	char *msg = alloca(msg_len);
-	int read = recvfrom(s, msg, msg_len, 0, (struct sockaddr *)&cli, &len);
+	int read = recvfrom(s, msg, msg_len, 0, &cli, &len);
 	assert(read >= 0);
 	assert(len == sizeof(cli));
 	send_packet(s, msg, msg_len, &cli);

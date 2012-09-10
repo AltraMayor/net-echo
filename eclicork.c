@@ -46,7 +46,7 @@ static inline void uncork(int s)
  * empty_cork(): Add the number of recently corked bytes, if any, and empty a
  * corked socket.
  */
-static void empty_cork(int s, const struct sockaddr_in *srv, FILE *f,
+static void empty_cork(int s, const struct sockaddr *srv, FILE *f,
 	int n_sent)
 {
 	bytes_corked += n_sent;
@@ -61,7 +61,7 @@ static void empty_cork(int s, const struct sockaddr_in *srv, FILE *f,
  * this function either splits up the message into separate packets or fits the
  * message into the current packet.
  */
-static void process_text(int s, const struct sockaddr_in *srv, char *in, int n)
+static void process_text(int s, const struct sockaddr *srv, char *in, int n)
 {
 	int bytes_avail = CORK_SIZE - bytes_corked;
 	int bytes_this_time = n > bytes_avail ? bytes_avail : n;
@@ -109,11 +109,14 @@ int main(int argc, char *argv[])
 
 		if (is_file(input)) {
 			if (bytes_corked)
-				empty_cork(s, &srv, stdout, 0);
+				empty_cork(s, (struct sockaddr *)&srv,
+					stdout, 0);
 
-			process_file(s, &srv, input + 3, CORK_SIZE, empty_cork);
+			process_file(s, (struct sockaddr *)&srv,
+				input + 3, CORK_SIZE, empty_cork);
 		} else {
-			process_text(s, &srv, input, n_read - 1);
+			process_text(s, (struct sockaddr *)&srv,
+				input, n_read - 1);
 		}
 
 		puts("\n");
