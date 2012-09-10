@@ -11,3 +11,6 @@ eclicork : eclicork.c eutils.c
 
 clean :
 	rm -f eserv ecli eclicork
+
+cscope :
+	cscope -b *.c *.h
