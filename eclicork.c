@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 
 		if (is_file(input)) {
 			struct fc_info fci;
-			fci.recv_fn = empty_cork;
+			init_fc_info(&fci, empty_cork);
 
 			if (bytes_corked)
 				empty_cork(s, &srv, stdout, 0);

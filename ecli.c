@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
 		if (is_file(input)) {
 			struct fc_info fci;
-			fci.recv_fn = recv_write;
+			init_fc_info(&fci, recv_write);
 			process_file(s, &srv, input + 3, MAX_UDP, &fci);
 		}
 		else {

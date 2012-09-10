@@ -18,12 +18,22 @@
 /* 0xffff - sizeof(Maximum UDP header) */
 #define MAX_UDP (0xffff - 8)
 
+typedef void (*fci_recv_fn_t)(int, const struct sockaddr_in *, FILE *, int);
+
 struct fc_info {
 	FILE *copy;
 	char *text;
 	int nbytes;
-	void (*recv_fn)(int, const struct sockaddr_in *, FILE *, int);
+	fci_recv_fn_t recv_fn;
 };
+
+static inline void init_fc_info(struct fc_info *info, fci_recv_fn_t f)
+{
+	info->copy = NULL;
+	info->text = NULL;
+	info->nbytes = 0;
+	info->recv_fn = f;
+}
 
 static inline int is_file(const char *x)
 {
