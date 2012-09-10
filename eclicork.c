@@ -108,13 +108,10 @@ int main(int argc, char *argv[])
 		cork(s);
 
 		if (is_file(input)) {
-			struct fc_info fci;
-			init_fc_info(&fci, empty_cork);
-
 			if (bytes_corked)
 				empty_cork(s, &srv, stdout, 0);
 
-			process_file(s, &srv, input + 3, CORK_SIZE, &fci);
+			process_file(s, &srv, input + 3, CORK_SIZE, empty_cork);
 		} else {
 			process_text(s, &srv, input, n_read - 1);
 		}

@@ -18,23 +18,6 @@
 /* 0xffff - sizeof(Maximum UDP header) */
 #define MAX_UDP (0xffff - 8)
 
-typedef void (*fci_recv_fn_t)(int, const struct sockaddr_in *, FILE *, int);
-
-struct fc_info {
-	FILE *copy;
-	char *text;
-	int nbytes;
-	fci_recv_fn_t recv_fn;
-};
-
-static inline void init_fc_info(struct fc_info *info, fci_recv_fn_t f)
-{
-	info->copy = NULL;
-	info->text = NULL;
-	info->nbytes = 0;
-	info->recv_fn = f;
-}
-
 static inline int is_file(const char *x)
 {
 	return (*x == '-') && (*(x + 1) == 'f');
@@ -47,7 +30,10 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr_in *dst);
 void recv_write(int s, const struct sockaddr_in *expected_src, FILE *copy,
 	int n_sent);
 
+/* Process File Function. */
+typedef void (*pff_recvf_t)(int, const struct sockaddr_in *, FILE *, int);
+
 void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
-	int chunk_size, struct fc_info *fci);
+	int chunk_size, pff_recvf_t f);
 
 #endif /* _ECHO_UTILS_H */

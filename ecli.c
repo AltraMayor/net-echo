@@ -55,14 +55,10 @@ int main(int argc, char *argv[])
 
 		strtok(input, "\n");
 
-		if (is_file(input)) {
-			struct fc_info fci;
-			init_fc_info(&fci, recv_write);
-			process_file(s, &srv, input + 3, MAX_UDP, &fci);
-		}
-		else {
+		if (is_file(input))
+			process_file(s, &srv, input + 3, MAX_UDP, recv_write);
+		else
 			process_text(s, &srv, input, n_read - 1);
-		}
 
 		puts("\n");
 	}

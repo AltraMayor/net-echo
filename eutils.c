@@ -70,45 +70,28 @@ static FILE *fopen_copy(const char *orig_name, const char *mode)
 }
 
 /**
- * __process_file(): Is called after a EOF is found in a file to write
- * the output to a given file.
- */
-static void __process_file(int s, const struct sockaddr_in *srv,
-	struct fc_info *fci, int max)
-{
-	int bytes_sent = 0;
-
-	while (fci->nbytes > 0) {
-		int bytes_to_send = fci->nbytes > max ? max : fci->nbytes;
-
-		send_packet(s, fci->text + bytes_sent, bytes_to_send, srv);
-		fci->recv_fn(s, srv, fci->copy, bytes_to_send);
-
-		fci->nbytes -= bytes_to_send;
-		bytes_sent += bytes_to_send;
-	}
-}
-
-/**
  * process_file(): Set up the output file, read in the file into a char buffer,
  * and call __process_file() to do a sequence of sends and receives.
  */
 void process_file(int s, const struct sockaddr_in *srv, const char *orig_name,
-	int chunk_size, struct fc_info *fci)
+	int chunk_size, pff_recvf_t f)
 {
-	size_t text_len = 0;
+	FILE *orig, *copy;
+	char *buf;
 
-	FILE *orig = fopen(orig_name, "rb");
+	orig = fopen(orig_name, "rb");
 	assert(orig);
+	copy = fopen_copy(orig_name, "wb");
+	assert(copy);
 
-	fci->copy = fopen_copy(orig_name, "wb");
-	assert(fci->copy);
+	buf = alloca(chunk_size);
+	do {
+		size_t bytes_read = fread(buf, chunk_size, 1, orig);
+		assert(!ferror(orig));
+		send_packet(s, buf, bytes_read, srv);
+		f(s, srv, copy, bytes_read);
+	} while (!feof(orig));
 
-	fci->nbytes = getdelim(&fci->text, &text_len, EOF, orig);
-	assert(fci->nbytes > 0);
-	__process_file(s, srv, fci, chunk_size);
-
-	free(fci->text);
-	assert(!fclose(fci->copy));
+	assert(!fclose(copy));
 	assert(!fclose(orig));
 }
