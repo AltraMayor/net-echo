@@ -86,10 +86,12 @@ void process_file(int s, const struct sockaddr *srv, const char *orig_name,
 
 	buf = alloca(chunk_size);
 	do {
-		size_t bytes_read = fread(buf, chunk_size, 1, orig);
+		size_t bytes_read = fread(buf, 1, chunk_size, orig);
 		assert(!ferror(orig));
-		send_packet(s, buf, bytes_read, srv);
-		f(s, srv, copy, bytes_read);
+		if (bytes_read > 0) {
+			send_packet(s, buf, bytes_read, srv);
+			f(s, srv, copy, bytes_read);
+		}
 	} while (!feof(orig));
 
 	assert(!fclose(copy));

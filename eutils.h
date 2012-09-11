@@ -14,8 +14,15 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
-/* 0xffff - sizeof(Maximum UDP header) */
-#define MAX_UDP (0xffff - 8)
+/* 0xffff - sizeof(Maximum UDP header)
+ *	- sizeof(IP header without options) - sizeof(Ethernet header)
+ *
+ * The second part of the sum shouldn't be necessary, however,
+ * while communicating through loopback device,
+ * not removing Ethernet header confuses Wireshark, and
+ * not removing IP header confuses the kernel.
+ */
+#define MAX_UDP (0xffff - 8 - 20 - 14)
 
 static inline int is_file(const char *x)
 {
