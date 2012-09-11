@@ -29,17 +29,21 @@ static inline int is_file(const char *x)
 	return (*x == '-') && (*(x + 1) == 'f');
 }
 
-void check_cli_params(int argc, char * const argv[]);
+int datagram_socket(int is_xia);
 
-void send_packet(int s, const char *buf, int n, const struct sockaddr *dst);
+int check_cli_params(int argc, char * const argv[]);
 
-void recv_write(int s, const struct sockaddr *expected_src, FILE *copy,
-	int n_sent);
+void send_packet(int s, const char *buf, int n, const struct sockaddr *dst,
+	socklen_t dst_len);
+
+void recv_write(int s, const struct sockaddr *expected_src,
+	socklen_t exp_src_len, FILE *copy, int n_sent);
 
 /* Process File Function. */
-typedef void (*pff_recvf_t)(int, const struct sockaddr *, FILE *, int);
+typedef void (*pff_recvf_t)(int s, const struct sockaddr *srv,
+	socklen_t srv_len, FILE *output, int length);
 
-void process_file(int s, const struct sockaddr *srv, const char *orig_name,
-	int chunk_size, pff_recvf_t f);
+void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
+	const char *orig_name, int chunk_size, pff_recvf_t f);
 
 #endif /* _ECHO_UTILS_H */

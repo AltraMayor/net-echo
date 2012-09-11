@@ -13,9 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+/* TODO
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+*/
 #include <arpa/inet.h>
 #include <linux/udp.h>
 #include "eutils.h"
@@ -46,12 +48,12 @@ static inline void uncork(int s)
  * empty_cork(): Add the number of recently corked bytes, if any, and empty a
  * corked socket.
  */
-static void empty_cork(int s, const struct sockaddr *srv, FILE *f,
-	int n_sent)
+static void empty_cork(int s, const struct sockaddr *srv, socklen_t srv_len,
+	FILE *f, int n_sent)
 {
 	bytes_corked += n_sent;
 	uncork(s);
-	recv_write(s, srv, f, bytes_corked);
+	recv_write(s, srv, srv_len, f, bytes_corked);
 	cork(s);
 	bytes_corked = 0;
 }
@@ -61,34 +63,35 @@ static void empty_cork(int s, const struct sockaddr *srv, FILE *f,
  * this function either splits up the message into separate packets or fits the
  * message into the current packet.
  */
-static void process_text(int s, const struct sockaddr *srv, char *in, int n)
+static void process_text(int s, const struct sockaddr *srv, socklen_t srv_len,
+	char *in, int n)
 {
 	int bytes_avail = CORK_SIZE - bytes_corked;
 	int bytes_this_time = n > bytes_avail ? bytes_avail : n;
 
-	send_packet(s, in, bytes_this_time, srv);
+	send_packet(s, in, bytes_this_time, srv, srv_len);
 	bytes_corked += bytes_this_time;
 
 	if (bytes_corked == CORK_SIZE)
-		empty_cork(s, srv, stdout, 0);
+		empty_cork(s, srv, srv_len, stdout, 0);
 
 	n -= bytes_this_time;
 	assert(n >= 0);
 	if (n)
-		process_text(s, srv, in + bytes_this_time, n);
+		process_text(s, srv, srv_len, in + bytes_this_time, n);
 }
 
 int main(int argc, char *argv[])
 {
 	struct sockaddr_in srv;
-	int s, n_read;
+	int s, n_read, is_xia;
 
 	char *input = NULL;
 	size_t line_size = 0;
 
-	check_cli_params(argc, argv);
+	is_xia = check_cli_params(argc, argv);
 
-	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	s = datagram_socket(is_xia);
 	assert(s >= 0);
 
 	memset(&srv, 0, sizeof(srv));
@@ -110,12 +113,12 @@ int main(int argc, char *argv[])
 		if (is_file(input)) {
 			if (bytes_corked)
 				empty_cork(s, (struct sockaddr *)&srv,
-					stdout, 0);
+					sizeof(srv), stdout, 0);
 
-			process_file(s, (struct sockaddr *)&srv,
+			process_file(s, (struct sockaddr *)&srv, sizeof(srv),
 				input + 3, CORK_SIZE, empty_cork);
 		} else {
-			process_text(s, (struct sockaddr *)&srv,
+			process_text(s, (struct sockaddr *)&srv, sizeof(srv),
 				input, n_read - 1);
 		}
 

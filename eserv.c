@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <linux/socket.h>
 #include <netinet/in.h>
 #include "eutils.h"
 
@@ -22,26 +23,26 @@
  */
 static void echo(int s, int msg_len)
 {
-	struct sockaddr cli;
+	struct __kernel_sockaddr_storage cli_stack;
+	struct sockaddr *cli = (struct sockaddr *)&cli_stack;
 	unsigned int len = sizeof(cli);
 	char *msg = alloca(msg_len);
-	int read = recvfrom(s, msg, msg_len, 0, &cli, &len);
+	int read = recvfrom(s, msg, msg_len, 0, cli, &len);
 	assert(read >= 0);
-	assert(len == sizeof(cli));
-	send_packet(s, msg, msg_len, &cli);
+	send_packet(s, msg, msg_len, cli, len);
 }
 
 int main(int argc, char *argv[])
 {
 	struct sockaddr_in srv;
-	int s;
+	int s, is_xia = 0;
 
 	if (argc != 2) {
 		printf("usage: ./server port\n");
 		exit(1);
 	}
 
-	s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	s = datagram_socket(is_xia);
 	assert(s >= 0);
 
 	memset(&srv, 0, sizeof(srv));
