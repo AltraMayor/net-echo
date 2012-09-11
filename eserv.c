@@ -33,6 +33,7 @@ static void echo(int s, int msg_len)
 
 int main(int argc, char *argv[])
 {
+	/* TODO add support to XIA! */
 	struct sockaddr_in srv;
 	int s, is_xia = 0;
 
@@ -48,8 +49,7 @@ int main(int argc, char *argv[])
 	srv.sin_family = AF_INET;
 	srv.sin_port = htons(atoi(argv[1]));
 	srv.sin_addr.s_addr = htonl(INADDR_ANY);
-
-	assert(!bind(s, (const struct sockaddr *)&srv, sizeof(srv)));
+	datagram_bind(0, 1, s, (const struct sockaddr *)&srv, sizeof(srv));
 
 	while (1) {
 		int len = recvfrom(s, NULL, 0, MSG_PEEK|MSG_TRUNC, NULL, NULL);

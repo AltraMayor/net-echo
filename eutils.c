@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include "eutils.h"
 
 #define FILE_APPENDIX "_echo"
@@ -35,12 +36,13 @@ int check_cli_params(int argc, char * const argv[])
 			goto failure;
 	}
 
-	if ((is_xia && argc == 3) || (!is_xia && argc == 4))
+	/* Don't simplify this test, argc may change for each case. */
+	if ((is_xia && argc == 4) || (!is_xia && argc == 4))
 		return is_xia;
 
 failure:
 	printf("usage:\t%s 'ip' srvip_addr port\n", argv[0]);
-	printf(      "\t%s 'xia' filename\n", argv[0]);
+	printf(      "\t%s 'xia' cli_addr_file srv_addr_file\n", argv[0]);
 	exit(1);
 }
 
@@ -51,6 +53,68 @@ int datagram_socket(int is_xia)
 		return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	else
 		return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+}
+
+static void set_sockaddr_in(struct sockaddr_in *in, char *str_addr, int port)
+{
+	in->sin_family = AF_INET;
+	in->sin_port = htons(port);
+	if (str_addr)
+		assert(inet_aton(str_addr, &in->sin_addr));
+	else
+		in->sin_addr.s_addr = htonl(INADDR_ANY);
+}
+
+static struct sockaddr *__get_addr(int is_xia, char *str1, char *str2,
+	int *plen)
+{
+	struct tmp_sockaddr_storage *skaddr;
+
+	skaddr = malloc(sizeof(*skaddr));
+	assert(skaddr);
+	memset(skaddr, 0, sizeof(*skaddr));
+
+	if (is_xia) {
+		/* TODO */
+	} else {
+		struct sockaddr_in *in = (struct sockaddr_in *)skaddr;
+		assert(sizeof(*skaddr) >= sizeof(*in));
+		set_sockaddr_in(in, str1, atoi(str2));
+		*plen = sizeof(*in);
+	}
+
+	return (struct sockaddr *)skaddr;
+}
+
+struct sockaddr *get_cli_addr(int is_xia, int argc, char * const argv[],
+	int *plen)
+{
+	if (is_xia)
+		return __get_addr(is_xia, argv[2], NULL, plen);
+	else
+		return __get_addr(is_xia, NULL, "0", plen);
+}
+
+struct sockaddr *get_srv_addr(int is_xia, int argc, char * const argv[],
+	int *plen)
+{
+	if (is_xia)
+		return __get_addr(is_xia, argv[3], NULL, plen);
+	else
+		return __get_addr(is_xia, argv[2], argv[3], plen);
+}
+
+void datagram_bind(int is_xia, int force, int s, const struct sockaddr *addr,
+	int addr_len)
+{
+	if (is_xia) {
+		/* TODO XIA requires explicit binding. */
+	} else if (force) {
+		/* TCP/IP doesn't require explicit binding, so only bind if
+		 * @force is true.
+		 */
+		assert(!bind(s, addr, addr_len));
+	}
 }
 
 /**

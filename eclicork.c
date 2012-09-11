@@ -13,11 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-/* TODO
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-*/
 #include <arpa/inet.h>
 #include <linux/udp.h>
 #include "eutils.h"
@@ -83,8 +78,8 @@ static void process_text(int s, const struct sockaddr *srv, socklen_t srv_len,
 
 int main(int argc, char *argv[])
 {
-	struct sockaddr_in srv;
-	int s, n_read, is_xia;
+	struct sockaddr *cli, *srv;
+	int s, n_read, is_xia, cli_len, srv_len;
 
 	char *input = NULL;
 	size_t line_size = 0;
@@ -93,11 +88,11 @@ int main(int argc, char *argv[])
 
 	s = datagram_socket(is_xia);
 	assert(s >= 0);
-
-	memset(&srv, 0, sizeof(srv));
-	srv.sin_family = AF_INET;
-	srv.sin_port = htons(atoi(argv[2]));
-	assert(inet_aton(argv[1], &srv.sin_addr));
+	cli = get_cli_addr(is_xia, argc, argv, &cli_len);
+	assert(cli);
+	srv = get_srv_addr(is_xia, argc, argv, &srv_len);
+	assert(srv);
+	datagram_bind(is_xia, 0, s, cli, cli_len);
 
 	while (1) {
 		n_read = getline(&input, &line_size, stdin);
@@ -112,20 +107,20 @@ int main(int argc, char *argv[])
 
 		if (is_file(input)) {
 			if (bytes_corked)
-				empty_cork(s, (struct sockaddr *)&srv,
-					sizeof(srv), stdout, 0);
+				empty_cork(s, srv, srv_len, stdout, 0);
 
-			process_file(s, (struct sockaddr *)&srv, sizeof(srv),
-				input + 3, CORK_SIZE, empty_cork);
+			process_file(s, srv, srv_len, input + 3,
+				CORK_SIZE, empty_cork);
 		} else {
-			process_text(s, (struct sockaddr *)&srv, sizeof(srv),
-				input, n_read - 1);
+			process_text(s, srv, srv_len, input, n_read - 1);
 		}
 
 		puts("\n");
 	}
 
 	free(input);
+	free(srv);
+	free(cli);
 	assert(!close(s));
 	return 0;
 }
