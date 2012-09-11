@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <linux/socket.h>
 #include <netinet/in.h>
 #include "eutils.h"
 
@@ -23,7 +22,7 @@
  */
 static void echo(int s, int msg_len)
 {
-	struct __kernel_sockaddr_storage cli_stack;
+	struct tmp_sockaddr_storage cli_stack;
 	struct sockaddr *cli = (struct sockaddr *)&cli_stack;
 	unsigned int len = sizeof(cli);
 	char *msg = alloca(msg_len);

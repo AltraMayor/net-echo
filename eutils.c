@@ -14,7 +14,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <linux/socket.h>
 #include "eutils.h"
 
 #define FILE_APPENDIX "_echo"
@@ -71,7 +70,7 @@ void recv_write(int s, const struct sockaddr *expected_src,
 	socklen_t exp_src_len, FILE *copy, int n_sent)
 {
 	char *out = alloca(n_sent);
-	struct __kernel_sockaddr_storage src;
+	struct tmp_sockaddr_storage src;
 	unsigned int len = sizeof(src);
 	int n_read = recvfrom(s, out, n_sent, 0, (struct sockaddr *)&src, &len);
 	assert(n_read >= 0);

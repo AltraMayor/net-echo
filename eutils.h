@@ -14,6 +14,15 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
+/* The best appoach would be to use struct __kernel_sockaddr_storage
+ * defined in <linux/socket.h>, or struct sockaddr_storage defined in libc.
+ * However, while XIA doesn't make into mainline, these structs are only
+ * half of the size needed.
+ */
+struct tmp_sockaddr_storage {
+	char memory[256];
+};
+
 /* 0xffff - sizeof(Maximum UDP header)
  *	- sizeof(IP header without options) - sizeof(Ethernet header)
  *
