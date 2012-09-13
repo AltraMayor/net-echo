@@ -42,6 +42,8 @@ int datagram_socket(int is_xia);
 
 int check_cli_params(int argc, char * const argv[]);
 
+struct sockaddr *__get_addr(int is_xia, char *str1, char *str2, int *plen);
+
 struct sockaddr *get_cli_addr(int is_xia, int argc, char * const argv[],
 	int *plen);
 

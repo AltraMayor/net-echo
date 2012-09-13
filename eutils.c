@@ -9,12 +9,15 @@
  */
 
 #include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include "xia_all.h"
 #include "eutils.h"
 
 #define FILE_APPENDIX "_echo"
@@ -49,8 +52,7 @@ failure:
 int datagram_socket(int is_xia)
 {
 	if (is_xia)
-		/* TODO */
-		return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		return socket(AF_XIA,  SOCK_DGRAM, XIDTYPE_XDP);
 	else
 		return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 }
@@ -65,8 +67,64 @@ static void set_sockaddr_in(struct sockaddr_in *in, char *str_addr, int port)
 		in->sin_addr.s_addr = htonl(INADDR_ANY);
 }
 
-static struct sockaddr *__get_addr(int is_xia, char *str1, char *str2,
-	int *plen)
+/* XXX This function was copied from xiaconf/xip/xiphid.c.
+ * It should go to a library!
+ */
+static int parse_and_validate_addr(char *str, struct xia_addr *addr)
+{
+	int invalid_flag;
+	int rc;
+
+	rc = xia_pton(str, INT_MAX, addr, 0, &invalid_flag);
+	if (rc < 0) {
+		fprintf(stderr, "Syntax error: invalid address: [[%s]]\n", str);
+		return rc;
+	}
+	rc = xia_test_addr(addr);
+	if (rc < 0) {
+		char buf[XIA_MAX_STRADDR_SIZE];
+		assert(xia_ntop(addr, buf, XIA_MAX_STRADDR_SIZE, 1) >= 0);
+		fprintf(stderr, "Invalid address (%i): [[%s]] "
+			"as seen by xia_xidtop: [[%s]]\n", -rc, str, buf);
+		return rc;
+	}
+	if (invalid_flag) {
+		fprintf(stderr, "Although valid, address has invalid flag: "
+			"[[%s]]\n", str);
+		return -1;
+	}
+	return 0;
+}
+
+static int set_sockaddr_xia(struct sockaddr_xia *xia, const char *filename)
+{
+#define BUFSIZE (4 * 1024)
+	static int ppal_map_loaded = 0;
+	FILE *f;
+	char buf[BUFSIZE];
+	int len;
+	
+	if (!ppal_map_loaded) {
+		ppal_map_loaded = 1;
+		assert(!init_ppal_map());
+	}
+
+	/* Read address. */
+	f = fopen(filename, "r");
+	if (!f) {
+		perror(__func__);
+		return errno;
+	}
+	len = fread(buf, 1, BUFSIZE, f);
+	assert(len < BUFSIZE);
+	fclose(f);
+	buf[len] = '\0';
+
+	xia->sxia_family = AF_XIA;
+	return parse_and_validate_addr(buf, &xia->sxia_addr);
+}
+
+struct sockaddr *__get_addr(int is_xia, char *str1, char *str2, int *plen)
 {
 	struct tmp_sockaddr_storage *skaddr;
 
@@ -75,9 +133,14 @@ static struct sockaddr *__get_addr(int is_xia, char *str1, char *str2,
 	memset(skaddr, 0, sizeof(*skaddr));
 
 	if (is_xia) {
-		/* TODO */
+		struct sockaddr_xia *xia = (struct sockaddr_xia *)skaddr;
+		/* XXX It should be a BUILD_BUG_ON(). */
+		assert(sizeof(*skaddr) >= sizeof(*xia));
+		assert(!set_sockaddr_xia(xia, str1));
+		*plen = sizeof(*xia);
 	} else {
 		struct sockaddr_in *in = (struct sockaddr_in *)skaddr;
+		/* XXX It should be a BUILD_BUG_ON(). */
 		assert(sizeof(*skaddr) >= sizeof(*in));
 		set_sockaddr_in(in, str1, atoi(str2));
 		*plen = sizeof(*in);
@@ -107,11 +170,9 @@ struct sockaddr *get_srv_addr(int is_xia, int argc, char * const argv[],
 void datagram_bind(int is_xia, int force, int s, const struct sockaddr *addr,
 	int addr_len)
 {
-	if (is_xia) {
-		/* TODO XIA requires explicit binding. */
-	} else if (force) {
-		/* TCP/IP doesn't require explicit binding, so only bind if
-		 * @force is true.
+	if (is_xia || force) {
+		/* XIA requires explicit binding, whereas TCP/IP doesn't,
+		 * so only bind if @force is true.
 		 */
 		assert(!bind(s, addr, addr_len));
 	}

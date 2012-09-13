@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <netinet/in.h>
 #include "eutils.h"
 
 /**
@@ -31,32 +30,45 @@ static void echo(int s, int msg_len)
 	send_packet(s, msg, msg_len, cli, len);
 }
 
+static int check_srv_params(int argc, char * const argv[])
+{
+	if (argc != 3)
+		goto failure;
+
+	if (!strcmp(argv[1], "xip"))
+		return 1;
+
+	if (!strcmp(argv[1], "ip"))
+		return 0;
+
+failure:
+	printf("usage:\t%s 'ip' port\n", argv[0]);
+	printf(      "\t%s 'xia' srv_addr_file\n", argv[0]);
+	exit(1);
+}
+
 int main(int argc, char *argv[])
 {
-	/* TODO add support to XIA! */
-	struct sockaddr_in srv;
-	int s, is_xia = 0;
+	struct sockaddr *srv;
+	int s, is_xia, srv_len;
 
-	if (argc != 2) {
-		printf("usage: ./server port\n");
-		exit(1);
-	}
+	is_xia = check_srv_params(argc, argv);
 
 	s = datagram_socket(is_xia);
 	assert(s >= 0);
 
-	memset(&srv, 0, sizeof(srv));
-	srv.sin_family = AF_INET;
-	srv.sin_port = htons(atoi(argv[1]));
-	srv.sin_addr.s_addr = htonl(INADDR_ANY);
-	datagram_bind(0, 1, s, (const struct sockaddr *)&srv, sizeof(srv));
+	srv = is_xia ?
+		__get_addr(is_xia, argv[2], NULL, &srv_len) :
+		__get_addr(is_xia, NULL, argv[2], &srv_len) ;
+	datagram_bind(0, 1, s, srv, srv_len);
 
 	while (1) {
 		int len = recvfrom(s, NULL, 0, MSG_PEEK|MSG_TRUNC, NULL, NULL);
 		assert(len >= 0);
 		echo(s, len);
 	}
-	assert(!close(s));
 
+	free(srv);
+	assert(!close(s));
 	return 0;
 }
