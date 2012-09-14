@@ -44,7 +44,7 @@ static int check_srv_params(int argc, char * const argv[])
 
 failure:
 	printf("usage:\t%s 'ip' port\n", argv[0]);
-	printf(      "\t%s 'xia' srv_addr_file\n", argv[0]);
+	printf(      "\t%s 'xip' srv_addr_file\n", argv[0]);
 	exit(1);
 }
 

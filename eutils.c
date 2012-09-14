@@ -45,7 +45,7 @@ int check_cli_params(int argc, char * const argv[])
 
 failure:
 	printf("usage:\t%s 'ip' srvip_addr port\n", argv[0]);
-	printf(      "\t%s 'xia' cli_addr_file srv_addr_file\n", argv[0]);
+	printf(      "\t%s 'xip' cli_addr_file srv_addr_file\n", argv[0]);
 	exit(1);
 }
 
