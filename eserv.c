@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include "eutils.h"
 
 /**
@@ -55,7 +56,12 @@ int main(int argc, char *argv[])
 	is_xia = check_srv_params(argc, argv);
 
 	s = datagram_socket(is_xia);
-	assert(s >= 0);
+	if (s < 0) {
+		int orig_errno = errno;
+		fprintf(stderr, "Cannot create %s socket: %s\n",
+			is_xia ? "xia" : "ip", strerror(orig_errno));
+		return 1;
+	}
 
 	srv = is_xia ?
 		__get_addr(is_xia, argv[2], NULL, &srv_len) :
