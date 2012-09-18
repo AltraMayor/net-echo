@@ -28,7 +28,7 @@ static void process_text(int s, struct sockaddr *srv, socklen_t srv_len,
 int main(int argc, char *argv[])
 {
 	struct sockaddr *cli, *srv;
-	int s, n_read, is_xia, cli_len, srv_len;
+	int s, n_read, is_xia, cli_len, srv_len, chunk_size;
 
 	char *input = NULL;
 	size_t line_size = 0;
@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
 	assert(srv);
 	datagram_bind(is_xia, 0, s, cli, cli_len);
 
+	chunk_size = is_xia ? 512 : MAX_UDP;
 	while (1) {
 		n_read = getline(&input, &line_size, stdin);
 		assert(n_read >= 0);
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
 
 		if (is_file(input))
 			process_file(s, srv, srv_len, input + 3,
-				MAX_UDP, recv_write);
+				chunk_size, recv_write);
 		else
 			process_text(s, srv, srv_len, input, n_read - 1);
 
