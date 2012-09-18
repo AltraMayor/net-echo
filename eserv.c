@@ -24,10 +24,10 @@ static void echo(int s, int msg_len)
 {
 	struct tmp_sockaddr_storage cli_stack;
 	struct sockaddr *cli = (struct sockaddr *)&cli_stack;
-	unsigned int len = sizeof(cli);
+	unsigned int len = sizeof(cli_stack);
 	char *msg = alloca(msg_len);
 	int read = recvfrom(s, msg, msg_len, 0, cli, &len);
-	assert(read >= 0);
+	assert(read == msg_len);
 	send_packet(s, msg, msg_len, cli, len);
 }
 
