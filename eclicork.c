@@ -19,6 +19,7 @@
 #include "eutils.h"
 
 #define CORK_SIZE 64
+#define CORK_TIMES (512/CORK_SIZE)
 
 static int bytes_corked; /* Number of corked bytes in current packet. */
 int is_xia;
@@ -60,6 +61,12 @@ static void empty_cork(int s, const struct sockaddr *srv, socklen_t srv_len,
 	fprintf(f, "\n");
 	cork(s);
 	bytes_corked = 0;
+}
+
+static void mark(int s)
+{
+	uncork(s);
+	cork(s);
 }
 
 /**
@@ -116,15 +123,8 @@ int main(int argc, char *argv[])
 		if (is_file(input)) {
 			if (bytes_corked)
 				empty_cork(s, srv, srv_len, stdout, 0);
-
-			/* XXX This isn't doing/testing anything different of
-			 * ecli.c, what process_file() should be doing is to
-			 * really test cork!
-			 */
-			uncork(s);
 			process_file(s, srv, srv_len, input + 3,
-				CORK_SIZE, recv_write);
-			cork(s);
+				CORK_SIZE, CORK_TIMES, mark);
 		} else {
 			process_text(s, srv, srv_len, input, n_read - 1);
 		}

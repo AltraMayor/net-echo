@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
 		if (is_file(input))
 			process_file(s, srv, srv_len, input + 3,
-				chunk_size, recv_write);
+				chunk_size, 1, NULL);
 		else
 			process_text(s, srv, srv_len, input, n_read - 1);
 

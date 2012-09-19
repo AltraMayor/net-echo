@@ -209,7 +209,7 @@ void recv_write(int s, const struct sockaddr *expected_src,
 	assert(rc >= 0);
 	if (!rc) {
 		/* A packet was dropped. */
-		fprintf(copy, ".");
+		fprintf(stderr, ".");
 		return;
 	}
 
@@ -246,10 +246,11 @@ static FILE *fopen_copy(const char *orig_name, const char *mode)
  * and call __process_file() to do a sequence of sends and receives.
  */
 void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
-	const char *orig_name, int chunk_size, pff_recvf_t f)
+	const char *orig_name, int chunk_size, int times, pff_mark_t f)
 {
 	FILE *orig, *copy;
 	char *buf;
+	int count, bytes_sent;
 
 	orig = fopen(orig_name, "rb");
 	assert(orig);
@@ -257,14 +258,28 @@ void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
 	assert(copy);
 
 	buf = alloca(chunk_size);
+	count = bytes_sent = 0;
 	do {
 		size_t bytes_read = fread(buf, 1, chunk_size, orig);
 		assert(!ferror(orig));
 		if (bytes_read > 0) {
 			send_packet(s, buf, bytes_read, srv, srv_len);
-			f(s, srv, srv_len, copy, bytes_read);
+			count++;
+			bytes_sent += bytes_read;
+		}
+		if (count == times) {
+			if (f)
+				f(s);
+			recv_write(s, srv, srv_len, copy, bytes_sent);
+			count = bytes_sent = 0;
 		}
 	} while (!feof(orig));
+
+	if (count) {
+		if (f)
+			f(s);
+		recv_write(s, srv, srv_len, copy, bytes_sent);
+	}
 
 	assert(!fclose(copy));
 	assert(!fclose(orig));
