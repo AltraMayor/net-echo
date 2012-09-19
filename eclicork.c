@@ -125,6 +125,7 @@ int main(int argc, char *argv[])
 				empty_cork(s, srv, srv_len, stdout, 0);
 			process_file(s, srv, srv_len, input + 3,
 				CORK_SIZE, CORK_TIMES, mark);
+			printf("\n");
 		} else {
 			process_text(s, srv, srv_len, input, n_read - 1);
 		}
