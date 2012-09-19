@@ -15,19 +15,24 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <linux/udp.h>
+#include "xia_all.h"
 #include "eutils.h"
 
 #define CORK_SIZE 64
 
 static int bytes_corked; /* Number of corked bytes in current packet. */
+int is_xia;
 
 /**
  * cork(): Cork socket to CORK_SIZE bytes.
  */
 static inline void cork(int s)
 {
-	int one = 1;
-	assert(!setsockopt(s, IPPROTO_UDP, UDP_CORK, &one, sizeof(int)));
+	int rc, one = 1;
+	rc = is_xia ?
+		setsockopt(s, XIDTYPE_XDP, XDP_CORK, &one, sizeof(int)):
+		setsockopt(s, IPPROTO_UDP, UDP_CORK, &one, sizeof(int));
+	assert(!rc);
 }
 
 /**
@@ -35,8 +40,11 @@ static inline void cork(int s)
  */
 static inline void uncork(int s)
 {
-	int zero = 0;
-	assert(!setsockopt(s, IPPROTO_UDP, UDP_CORK, &zero, sizeof(int)));
+	int rc, zero = 0;
+	rc = is_xia ?
+		setsockopt(s, XIDTYPE_XDP, XDP_CORK, &zero, sizeof(int)):
+		setsockopt(s, IPPROTO_UDP, UDP_CORK, &zero, sizeof(int));
+	assert(!rc);
 }
 
 /**
@@ -49,6 +57,7 @@ static void empty_cork(int s, const struct sockaddr *srv, socklen_t srv_len,
 	bytes_corked += n_sent;
 	uncork(s);
 	recv_write(s, srv, srv_len, f, bytes_corked);
+	fprintf(f, "\n");
 	cork(s);
 	bytes_corked = 0;
 }
@@ -67,6 +76,7 @@ static void process_text(int s, const struct sockaddr *srv, socklen_t srv_len,
 	send_packet(s, in, bytes_this_time, srv, srv_len);
 	bytes_corked += bytes_this_time;
 
+	assert(bytes_corked <= CORK_SIZE);
 	if (bytes_corked == CORK_SIZE)
 		empty_cork(s, srv, srv_len, stdout, 0);
 
@@ -79,7 +89,7 @@ static void process_text(int s, const struct sockaddr *srv, socklen_t srv_len,
 int main(int argc, char *argv[])
 {
 	struct sockaddr *cli, *srv;
-	int s, n_read, is_xia, cli_len, srv_len;
+	int s, n_read, cli_len, srv_len;
 
 	char *input = NULL;
 	size_t line_size = 0;
@@ -94,28 +104,32 @@ int main(int argc, char *argv[])
 	assert(srv);
 	datagram_bind(is_xia, 0, s, cli, cli_len);
 
+	cork(s);
 	while (1) {
 		n_read = getline(&input, &line_size, stdin);
 		assert(n_read >= 0);
 
 		if (n_read == 1)		/* Empty message. */
 			continue;
-
 		strtok(input, "\n");
-
-		cork(s);
 
 		if (is_file(input)) {
 			if (bytes_corked)
 				empty_cork(s, srv, srv_len, stdout, 0);
 
+			/* XXX This isn't doing/testing anything different of
+			 * ecli.c, what process_file() should be doing is to
+			 * really test cork!
+			 */
+			uncork(s);
 			process_file(s, srv, srv_len, input + 3,
-				CORK_SIZE, empty_cork);
+				CORK_SIZE, recv_write);
+			cork(s);
 		} else {
 			process_text(s, srv, srv_len, input, n_read - 1);
 		}
 
-		printf("\n\n");
+		printf("\n");
 	}
 
 	free(input);
