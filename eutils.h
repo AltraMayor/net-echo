@@ -35,7 +35,9 @@ struct tmp_sockaddr_storage {
 
 static inline int is_file(const char *x)
 {
-	return (*x == '-') && (*(x + 1) == 'f');
+	return	(x[0] == '-') &&
+		(x[1] == 'f') &&
+		(x[2] == ' ');
 }
 
 int datagram_socket(int is_xia);
