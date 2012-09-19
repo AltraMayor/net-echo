@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "xia_all.h"
@@ -194,16 +195,35 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr *dst,
 void recv_write(int s, const struct sockaddr *expected_src,
 	socklen_t exp_src_len, FILE *copy, int n_sent)
 {
-	char *out = alloca(n_sent);
+	struct timeval timeout = {.tv_sec = 2, .tv_usec = 0};
+	fd_set readfds;
 	struct tmp_sockaddr_storage src;
-	unsigned int len = sizeof(src);
-	int n_read = recvfrom(s, out, n_sent, 0, (struct sockaddr *)&src, &len);
+	char *out;
+	unsigned int len;
+	int rc, n_read;
+
+	/* Is there anything to read? */
+	FD_ZERO(&readfds);
+	FD_SET(s, &readfds);
+	rc = select(s + 1, &readfds, NULL, NULL, &timeout);
+	assert(rc >= 0);
+	if (!rc) {
+		/* A packet was dropped. */
+		fprintf(copy, ".");
+		return;
+	}
+
+	/* Read. */
+	out = alloca(n_sent);
+	len = sizeof(src);
+	n_read = recvfrom(s, out, n_sent, 0, (struct sockaddr *)&src, &len);
 	assert(n_read >= 0);
 
 	/* Make sure that we're reading from the server. */
 	assert(len == exp_src_len);
 	assert(!memcmp(&src, expected_src, len));
 
+	/* Write. */
 	assert(fwrite(out, sizeof(char), n_read, copy) >= 0);
 }
 
