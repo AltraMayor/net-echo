@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 			process_text(s, srv, srv_len, input, n_read - 1);
 		}
 
-		puts("\n");
+		printf("\n\n");
 	}
 
 	free(input);

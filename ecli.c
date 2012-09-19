@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 		else
 			process_text(s, srv, srv_len, input, n_read - 1);
 
-		puts("\n");
+		printf("\n\n");
 	}
 
 	free(input);
