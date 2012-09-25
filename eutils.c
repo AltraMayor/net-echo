@@ -179,6 +179,46 @@ void datagram_bind(int is_xia, int force, int s, const struct sockaddr *addr,
 	}
 }
 
+int read_command(char *buf, int len)
+{
+	size_t n_read;
+
+	while (1) {
+		char *s = fgets(buf, len, stdin);
+		if (!s) {
+			if (feof(stdin)) {
+				/* User pressed Ctrl+D. */
+				if (len >= 1)
+					buf[0] = '\0';
+				return 0;
+			}
+			fprintf(stderr, "%s: fgets errno=%i: %s\n",
+				__func__, errno, strerror(errno));
+			exit(1);
+		}
+
+		n_read = strlen(s);
+
+		/* Skip empty commands. */
+		if (n_read == 0)	/* EOF */
+			continue;
+		if (n_read == 1 && (s[0] == '\n'))
+			continue;
+
+		/* Done. */
+		break;
+	}
+
+	/* Shave '\n' off. */
+	if (buf[n_read - 1] == '\n') {
+		n_read--;
+		buf[n_read] = '\0';
+	}
+
+	assert(n_read > 0);
+	return n_read;
+}
+
 /**
  * send_packet(): Send a packet via the given socket.
  */

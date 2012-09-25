@@ -10,8 +10,8 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <linux/udp.h>
@@ -96,10 +96,7 @@ static void process_text(int s, const struct sockaddr *srv, socklen_t srv_len,
 int main(int argc, char *argv[])
 {
 	struct sockaddr *cli, *srv;
-	int s, n_read, cli_len, srv_len;
-
-	char *input = NULL;
-	size_t line_size = 0;
+	int s, cli_len, srv_len;
 
 	is_xia = check_cli_params(argc, argv);
 
@@ -113,12 +110,10 @@ int main(int argc, char *argv[])
 
 	cork(s);
 	while (1) {
-		n_read = getline(&input, &line_size, stdin);
-		assert(n_read >= 0);
-
-		if (n_read == 1)		/* Empty message. */
-			continue;
-		strtok(input, "\n");
+		char input[512];
+		int n_read = read_command(input, sizeof(input));
+		if (n_read <= 0)
+			break;
 
 		if (is_file(input)) {
 			if (bytes_corked)
@@ -127,13 +122,12 @@ int main(int argc, char *argv[])
 				CORK_SIZE, CORK_TIMES, mark);
 			printf("\n");
 		} else {
-			process_text(s, srv, srv_len, input, n_read - 1);
+			process_text(s, srv, srv_len, input, n_read);
 		}
 
 		printf("\n");
 	}
 
-	free(input);
 	free(srv);
 	free(cli);
 	assert(!close(s));

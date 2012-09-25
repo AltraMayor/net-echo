@@ -55,6 +55,8 @@ struct sockaddr *get_srv_addr(int is_xia, int argc, char * const argv[],
 void datagram_bind(int is_xia, int force, int s, const struct sockaddr *addr,
 	int addr_len);
 
+int read_command(char *buf, int len);
+
 void send_packet(int s, const char *buf, int n, const struct sockaddr *dst,
 	socklen_t dst_len);
 
