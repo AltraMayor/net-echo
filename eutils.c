@@ -185,7 +185,12 @@ void datagram_bind(int is_xia, int force, int s, const struct sockaddr *addr,
 void send_packet(int s, const char *buf, int n, const struct sockaddr *dst,
 	socklen_t dst_len)
 {
-	assert(sendto(s, buf, n, 0, dst, dst_len) >= 0);
+	ssize_t rc = sendto(s, buf, n, 0, dst, dst_len);
+	if (rc < 0) {
+		fprintf(stderr, "%s: sendto errno=%i: %s\n",
+			__func__, errno, strerror(errno));
+		exit(1);
+	}
 }
 
 /**
