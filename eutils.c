@@ -233,6 +233,43 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr *dst,
 	}
 }
 
+static int count_rows(const struct sockaddr_xia *xia)
+{
+	int i;
+	for (i = 0; i < XIA_NODES_MAX; i++)
+		if (xia_is_nat(xia->sxia_addr.s_row[i].s_xid.xid_type))
+			break;
+	return i;
+}
+
+static int address_match(const struct sockaddr *addr, socklen_t addr_len,
+	const struct sockaddr *expected, socklen_t exp_len)
+{
+	assert(addr->sa_family == expected->sa_family);
+
+	switch (addr->sa_family) {
+	case AF_INET:
+		return addr_len == exp_len && !memcmp(addr, expected, addr_len);
+
+	case AF_XIA: {
+		struct sockaddr_xia *addr_xia = (struct sockaddr_xia *)addr;
+		struct sockaddr_xia *exp_xia = (struct sockaddr_xia *)expected;
+		int addr_n = count_rows(addr_xia);
+		int exp_n = count_rows(exp_xia);
+
+		assert(addr_n > 0 && exp_n > 0);
+
+		return !memcmp(&addr_xia->sxia_addr.s_row[addr_n - 1].s_xid,
+			&exp_xia->sxia_addr.s_row[exp_n - 1].s_xid,
+			sizeof(addr_xia->sxia_addr.s_row[0].s_xid));
+		break;
+	}
+
+	default:
+		assert(0);
+	}
+}
+
 /**
  * recv_write(): Receive a packet via the given socket and write to the
  * given file.
@@ -265,8 +302,8 @@ void recv_write(int s, const struct sockaddr *expected_src,
 	assert(n_read >= 0);
 
 	/* Make sure that we're reading from the server. */
-	assert(len == exp_src_len);
-	assert(!memcmp(&src, expected_src, len));
+	assert(address_match((struct sockaddr *)&src, len,
+		expected_src, exp_src_len));
 
 	/* Write. */
 	assert(fwrite(out, sizeof(char), n_read, copy) >= 0);
