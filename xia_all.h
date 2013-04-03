@@ -9,8 +9,8 @@
 
 #include "ppal_map.h"
 
-#define AF_XIA          40
-#define XIDTYPE_XDP (__cpu_to_be32(0x12))
+#define AF_XIA          41
+#define XIDTYPE_XDP (__cpu_to_be32(0x17))
 #define XDP_CORK        1
 
 #endif	/* _ECHO_XIA_ALL_H */
