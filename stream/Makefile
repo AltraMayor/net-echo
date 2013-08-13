@@ -2,12 +2,9 @@ CC = gcc
 CFLAGS = -Wall -Wextra -g -MMD
 LDFLAGS = -g
 
-TARGETS = tserver tclient
+TARGETS = tclient
 
 all : $(TARGETS)
-
-tserver : tserver.o sockutil.o
-	$(CC) -o $@ $^ $(LDFLAGS)
 
 tclient : tclient.o sockutil.o
 	$(CC) -o $@ $^ $(LDFLAGS)

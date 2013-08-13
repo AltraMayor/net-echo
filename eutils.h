@@ -43,7 +43,7 @@ static inline int is_file(const char *x)
 		(x[2] == ' ');
 }
 
-int datagram_socket(int is_xia);
+int any_socket(int is_xia, int is_stream);
 
 int check_cli_params(int argc, char * const argv[]);
 
@@ -55,7 +55,7 @@ struct sockaddr *get_cli_addr(int is_xia, int argc, char * const argv[],
 struct sockaddr *get_srv_addr(int is_xia, int argc, char * const argv[],
 	int *plen);
 
-void datagram_bind(int is_xia, int force, int s, const struct sockaddr *addr,
+void any_bind(int is_xia, int force, int s, const struct sockaddr *addr,
 	int addr_len);
 
 int read_command(char *buf, int len);
@@ -73,5 +73,8 @@ void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
 	const char *orig_name, int chunk_size, int times, pff_mark_t f);
 
 xid_type_t get_xdp_type(void);
+xid_type_t get_srvc_type(void);
+
+void copy_data(int from, int to);
 
 #endif /* _ECHO_UTILS_H */

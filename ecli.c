@@ -32,13 +32,13 @@ int main(int argc, char *argv[])
 
 	is_xia = check_cli_params(argc, argv);
 
-	s = datagram_socket(is_xia);
+	s = any_socket(is_xia, 0);
 	assert(s >= 0);
 	cli = get_cli_addr(is_xia, argc, argv, &cli_len);
 	assert(cli);
 	srv = get_srv_addr(is_xia, argc, argv, &srv_len);
 	assert(srv);
-	datagram_bind(is_xia, 0, s, cli, cli_len);
+	any_bind(is_xia, 0, s, cli, cli_len);
 
 	chunk_size = is_xia ? 512 : MAX_UDP;
 	while (1) {

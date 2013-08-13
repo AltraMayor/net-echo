@@ -19,6 +19,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include "eutils.h"
 
 #define FILE_APPENDIX "_echo"
@@ -61,6 +62,7 @@ static inline void load_ppal_map(void)
 }
 
 static xid_type_t xidtype_xdp = XIDTYPE_NAT;
+static xid_type_t xidtype_srvc = XIDTYPE_NAT;
 
 xid_type_t get_xdp_type(void)
 {
@@ -72,12 +74,35 @@ xid_type_t get_xdp_type(void)
 	return xidtype_xdp;
 }
 
-int datagram_socket(int is_xia)
+xid_type_t get_srvc_type(void)
 {
-	if (is_xia)
-		return socket(AF_XIA,  SOCK_DGRAM, get_xdp_type());
-	else
-		return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (xidtype_srvc != XIDTYPE_NAT)
+		return xidtype_srvc;
+
+	load_ppal_map();
+	assert(!ppal_name_to_type("serval", &xidtype_srvc));
+	return xidtype_srvc;
+}
+
+int any_socket(int is_xia, int is_stream)
+{
+	int domain = is_xia ? AF_XIA : AF_INET;
+	int type = is_stream ? SOCK_STREAM : SOCK_DGRAM;
+	int protocol = is_xia
+			? (is_stream ? get_srvc_type()	: get_xdp_type())
+			: (is_stream ? IPPROTO_TCP	: IPPROTO_UDP);
+	int sock = socket(domain, type, protocol);
+
+	if (!is_xia && sock >= 0) {
+		/* Let the kernel reuse the socket address. This lets us run
+		 * twice in a row, without waiting for the (ip, port) tuple
+		 * to time out.
+		 */
+		int i = 1;
+		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &i, sizeof(i));
+	}
+
+	return sock;
 }
 
 static void set_sockaddr_in(struct sockaddr_in *in, char *str_addr, int port)
@@ -188,7 +213,7 @@ struct sockaddr *get_srv_addr(int is_xia, int argc, char * const argv[],
 		return __get_addr(is_xia, argv[2], argv[3], plen);
 }
 
-void datagram_bind(int is_xia, int force, int s, const struct sockaddr *addr,
+void any_bind(int is_xia, int force, int s, const struct sockaddr *addr,
 	int addr_len)
 {
 	if (is_xia || force) {
@@ -385,4 +410,19 @@ void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
 
 	assert(!fclose(copy));
 	assert(!fclose(orig));
+}
+
+/* Copies data from file descriptor @from to file descriptor
+ * @to until nothing is left to be copied. Exits if an error
+ * occurs. This assumes both @from and @to are set for blocking
+ * reads and writes.
+ */
+void copy_data(int from, int to)
+{
+	char buf[2048];
+	ssize_t amount;
+
+	while ((amount = read(from, buf, sizeof(buf))) > 0)
+		assert(write(to, buf, amount) == amount);
+	assert(amount >= 0);
 }
