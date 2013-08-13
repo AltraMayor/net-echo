@@ -1,16 +1,25 @@
-all : eserv ecli eclicork
+CC = gcc
+CFLAGS = -Wall -Wextra -g -MMD -I ../xiaconf/kernel-include \
+-I ../xiaconf/include
+LDFLAGS = -g -L ../xiaconf/libxia -lxia
 
-eserv : eserv.c eutils.c
-	gcc -o eserv -Wall -I kernel eserv.c eutils.c dag.c ppal_map.c
+TARGETS = eserv ecli eclicork
 
-ecli : ecli.c eutils.c
-	gcc -o ecli -Wall -I kernel ecli.c eutils.c dag.c ppal_map.c
+all : $(TARGETS)
 
-eclicork : eclicork.c eutils.c
-	gcc -o eclicork -Wall -I kernel eclicork.c eutils.c dag.c ppal_map.c
+eserv : eserv.o eutils.o
+	$(CC) -o $@ $^ $(LDFLAGS)
 
+ecli : ecli.o eutils.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+eclicork : eclicork.o eutils.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+-include *.d
+
+PHONY : clean cscope
 clean :
-	rm -f eserv ecli eclicork
-
+	rm -f *.o *.d cscope.out $(TARGETS)
 cscope :
 	cscope -b *.c *.h
