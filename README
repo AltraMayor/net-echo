@@ -1,1 +1,15 @@
-This is the source code for the UDP echo clients and server.
+This is the source code for echo clients and server.
+
+The server and clients support TCP/IP's TCP and UDP, and XIA's Serval and XDP.
+
+Application	- Description
+-----------------------------
+eserv		- Echo server.
+ecli		- Echo client.
+eclicork	- Echo client that supports cork.
+run		- Script to help run applications with a not installed libxia.
+
+The applications require libxia, which is available from xiaconf
+(https://github.com/AltraMayor/xiaconf). Download and buid xiaconf before
+compiling this project. Once inside this project's folder, ../xiaconf must
+refer xiaconf repository.
