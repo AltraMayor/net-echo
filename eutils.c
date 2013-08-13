@@ -1,8 +1,9 @@
 /*
  * eutils.c
  *
- * Cody Doucette
- * Boston University
+ * Authors:
+ *	Cody Doucette		Boston University
+ *	Michel Machado		Boston University
  *
  * This file contains utility definitions for the echo clients and server.
  *
@@ -18,7 +19,6 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "xia_all.h"
 #include "eutils.h"
 
 #define FILE_APPENDIX "_echo"
@@ -50,10 +50,32 @@ failure:
 	exit(1);
 }
 
+static int ppal_map_loaded = 0;
+
+static inline void load_ppal_map(void)
+{
+	if (ppal_map_loaded)
+		return;
+	assert(!init_ppal_map(NULL));
+	ppal_map_loaded = 1;
+}
+
+static xid_type_t xidtype_xdp = XIDTYPE_NAT;
+
+xid_type_t get_xdp_type(void)
+{
+	if (xidtype_xdp != XIDTYPE_NAT)
+		return xidtype_xdp;
+
+	load_ppal_map();
+	assert(!ppal_name_to_type("xdp", &xidtype_xdp));
+	return xidtype_xdp;
+}
+
 int datagram_socket(int is_xia)
 {
 	if (is_xia)
-		return socket(AF_XIA,  SOCK_DGRAM, XIDTYPE_XDP);
+		return socket(AF_XIA,  SOCK_DGRAM, get_xdp_type());
 	else
 		return socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 }
@@ -100,15 +122,11 @@ static int parse_and_validate_addr(char *str, struct xia_addr *addr)
 static int set_sockaddr_xia(struct sockaddr_xia *xia, const char *filename)
 {
 #define BUFSIZE (4 * 1024)
-	static int ppal_map_loaded = 0;
 	FILE *f;
 	char buf[BUFSIZE];
 	int len;
-	
-	if (!ppal_map_loaded) {
-		ppal_map_loaded = 1;
-		assert(!init_ppal_map(NULL));
-	}
+
+	load_ppal_map();
 
 	/* Read address. */
 	f = fopen(filename, "r");

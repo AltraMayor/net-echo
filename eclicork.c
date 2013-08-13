@@ -15,7 +15,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <linux/udp.h>
-#include "xia_all.h"
 #include "eutils.h"
 
 #define CORK_SIZE 64
@@ -31,7 +30,7 @@ static inline void cork(int s)
 {
 	int rc, one = 1;
 	rc = is_xia ?
-		setsockopt(s, XIDTYPE_XDP, XDP_CORK, &one, sizeof(int)):
+		setsockopt(s, get_xdp_type(), XDP_CORK, &one, sizeof(int)):
 		setsockopt(s, IPPROTO_UDP, UDP_CORK, &one, sizeof(int));
 	assert(!rc);
 }
@@ -43,7 +42,7 @@ static inline void uncork(int s)
 {
 	int rc, zero = 0;
 	rc = is_xia ?
-		setsockopt(s, XIDTYPE_XDP, XDP_CORK, &zero, sizeof(int)):
+		setsockopt(s, get_xdp_type(), XDP_CORK, &zero, sizeof(int)):
 		setsockopt(s, IPPROTO_UDP, UDP_CORK, &zero, sizeof(int));
 	assert(!rc);
 }

@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <sys/socket.h>
+#include <xia_socket.h>
 
 #define UNUSED(x) (void)x
 
@@ -70,5 +71,7 @@ typedef void (*pff_mark_t)(int s);
 
 void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
 	const char *orig_name, int chunk_size, int times, pff_mark_t f);
+
+xid_type_t get_xdp_type(void);
 
 #endif /* _ECHO_UTILS_H */
