@@ -95,11 +95,17 @@ static void process_text(int s, const struct sockaddr *srv, socklen_t srv_len,
 int main(int argc, char *argv[])
 {
 	struct sockaddr *cli, *srv;
-	int s, cli_len, srv_len;
+	int is_stream, s, cli_len, srv_len;
 
-	is_xia = check_cli_params(argc, argv);
+	is_xia = check_cli_params(&is_stream, argc, argv);
 
-	s = any_socket(is_xia, 0);
+	if (is_stream) {
+		/* XXX Implement stream support. */
+		printf("Stream support not implemented.\n");
+		exit(1);
+	}
+
+	s = any_socket(is_xia, is_stream);
 	assert(s >= 0);
 	cli = get_cli_addr(is_xia, argc, argv, &cli_len);
 	assert(cli);
@@ -117,7 +123,7 @@ int main(int argc, char *argv[])
 		if (is_file(input)) {
 			if (bytes_corked)
 				empty_cork(s, srv, srv_len, stdout, 0);
-			process_file(s, srv, srv_len, input + 3,
+			datagram_process_file(s, srv, srv_len, input + 3,
 				CORK_SIZE, CORK_TIMES, mark);
 			printf("\n");
 		} else {

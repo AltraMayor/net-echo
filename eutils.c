@@ -28,26 +28,37 @@
  * check_cli_params(): Ensure that the correct number of arguments have been
  * given.
  */
-int check_cli_params(int argc, char * const argv[])
+int check_cli_params(int *pis_stream, int argc, char * const argv[])
 {
 	int is_xia;
 
 	if (argc > 1) {
-		if (!strcmp(argv[1], "xip"))
+		if (!strcmp(argv[1], "datagram"))
+			*pis_stream = 0;
+		else if (!strcmp(argv[1], "stream"))
+			*pis_stream = 1;
+		else
+			goto failure;
+	}
+
+	if (argc > 2) {
+		if (!strcmp(argv[2], "xip"))
 			is_xia = 1;
-		else if (!strcmp(argv[1], "ip"))
+		else if (!strcmp(argv[2], "ip"))
 			is_xia = 0;
 		else
 			goto failure;
 	}
 
 	/* Don't simplify this test, argc may change for each case. */
-	if ((is_xia && argc == 4) || (!is_xia && argc == 4))
+	if ((is_xia && argc == 5) || (!is_xia && argc == 5))
 		return is_xia;
 
 failure:
-	printf("usage:\t%s 'ip' srvip_addr port\n", argv[0]);
-	printf(      "\t%s 'xip' cli_addr_file srv_addr_file\n", argv[0]);
+	printf("usage:\t%s <'datagram' | 'stream'> 'ip' srvip_addr port\n",
+		argv[0]);
+	printf(      "\t%s <'datagram' | 'stream'> 'xip' cli_addr_file srv_addr_file\n",
+		argv[0]);
 	exit(1);
 }
 
@@ -198,7 +209,7 @@ struct sockaddr *get_cli_addr(int is_xia, int argc, char * const argv[],
 {
 	UNUSED(argc);
 	if (is_xia)
-		return __get_addr(is_xia, argv[2], NULL, plen);
+		return __get_addr(is_xia, argv[3], NULL, plen);
 	else
 		return __get_addr(is_xia, NULL, "0", plen);
 }
@@ -208,9 +219,9 @@ struct sockaddr *get_srv_addr(int is_xia, int argc, char * const argv[],
 {
 	UNUSED(argc);
 	if (is_xia)
-		return __get_addr(is_xia, argv[3], NULL, plen);
+		return __get_addr(is_xia, argv[4], NULL, plen);
 	else
-		return __get_addr(is_xia, argv[2], argv[3], plen);
+		return __get_addr(is_xia, argv[3], argv[4], plen);
 }
 
 void any_bind(int is_xia, int force, int s, const struct sockaddr *addr,
@@ -354,6 +365,29 @@ void recv_write(int s, const struct sockaddr *expected_src,
 	fwrite(out, sizeof(char), n_read, copy);
 }
 
+void read_write(int s, FILE *copy, int n_sent)
+{
+	char *out;
+	int n_read;
+
+	/* Read. */
+	out = alloca(n_sent);
+	n_read = 0;
+	while (n_sent > n_read) {
+		int len = read(s, out + n_read, n_sent - n_read);
+		if (len <= 0) {
+			/* The connection was closed or an error occorred. */
+			fprintf(stderr, ".");
+			return;
+		}
+		n_read += len;
+	}
+	assert(n_read == n_sent);
+
+	/* Write. */
+	fwrite(out, sizeof(char), n_read, copy);
+}
+
 /**
  * fopen_copy(): Create and open a file to for writing output.
  */
@@ -372,7 +406,7 @@ static FILE *fopen_copy(const char *orig_name, const char *mode)
  * process_file(): Set up the output file, read in the file into a char buffer,
  * and call __process_file() to do a sequence of sends and receives.
  */
-void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
+void datagram_process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
 	const char *orig_name, int chunk_size, int times, pff_mark_t f)
 {
 	FILE *orig, *copy;
@@ -406,6 +440,47 @@ void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
 		if (f)
 			f(s);
 		recv_write(s, srv, srv_len, copy, bytes_sent);
+	}
+
+	assert(!fclose(copy));
+	assert(!fclose(orig));
+}
+
+void stream_process_file(int s, const char *orig_name, int chunk_size,
+	int times, pff_mark_t f)
+{
+	FILE *orig, *copy;
+	char *buf;
+	int count, bytes_sent;
+
+	orig = fopen(orig_name, "rb");
+	assert(orig);
+	copy = fopen_copy(orig_name, "wb");
+	assert(copy);
+
+	buf = alloca(chunk_size);
+	count = bytes_sent = 0;
+	do {
+		size_t bytes_read = fread(buf, 1, chunk_size, orig);
+		assert(!ferror(orig));
+		if (bytes_read > 0) {
+			assert(write(s, buf, bytes_read) ==
+				(ssize_t)bytes_read);
+			count++;
+			bytes_sent += bytes_read;
+		}
+		if (count == times) {
+			if (f)
+				f(s);
+			read_write(s, copy, bytes_sent);
+			count = bytes_sent = 0;
+		}
+	} while (!feof(orig));
+
+	if (count) {
+		if (f)
+			f(s);
+		read_write(s, copy, bytes_sent);
 	}
 
 	assert(!fclose(copy));

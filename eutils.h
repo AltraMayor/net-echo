@@ -45,7 +45,7 @@ static inline int is_file(const char *x)
 
 int any_socket(int is_xia, int is_stream);
 
-int check_cli_params(int argc, char * const argv[]);
+int check_cli_params(int *pis_stream, int argc, char * const argv[]);
 
 struct sockaddr *__get_addr(int is_xia, char *str1, char *str2, int *plen);
 
@@ -66,11 +66,16 @@ void send_packet(int s, const char *buf, int n, const struct sockaddr *dst,
 void recv_write(int s, const struct sockaddr *expected_src,
 	socklen_t exp_src_len, FILE *copy, int n_sent);
 
+void read_write(int s, FILE *copy, int n_sent);
+
 /* Process File Function. */
 typedef void (*pff_mark_t)(int s);
 
-void process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
+void datagram_process_file(int s, const struct sockaddr *srv, socklen_t srv_len,
 	const char *orig_name, int chunk_size, int times, pff_mark_t f);
+
+void stream_process_file(int s, const char *orig_name, int chunk_size,
+	int times, pff_mark_t f);
 
 xid_type_t get_xdp_type(void);
 xid_type_t get_srvc_type(void);
