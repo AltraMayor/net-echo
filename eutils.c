@@ -107,7 +107,7 @@ static int set_sockaddr_xia(struct sockaddr_xia *xia, const char *filename)
 	
 	if (!ppal_map_loaded) {
 		ppal_map_loaded = 1;
-		assert(!init_ppal_map());
+		assert(!init_ppal_map(NULL));
 	}
 
 	/* Read address. */
