@@ -153,6 +153,7 @@ struct sockaddr *__get_addr(int is_xia, char *str1, char *str2, int *plen)
 struct sockaddr *get_cli_addr(int is_xia, int argc, char * const argv[],
 	int *plen)
 {
+	UNUSED(argc);
 	if (is_xia)
 		return __get_addr(is_xia, argv[2], NULL, plen);
 	else
@@ -162,6 +163,7 @@ struct sockaddr *get_cli_addr(int is_xia, int argc, char * const argv[],
 struct sockaddr *get_srv_addr(int is_xia, int argc, char * const argv[],
 	int *plen)
 {
+	UNUSED(argc);
 	if (is_xia)
 		return __get_addr(is_xia, argv[3], NULL, plen);
 	else
@@ -306,7 +308,7 @@ void recv_write(int s, const struct sockaddr *expected_src,
 		expected_src, exp_src_len));
 
 	/* Write. */
-	assert(fwrite(out, sizeof(char), n_read, copy) >= 0);
+	fwrite(out, sizeof(char), n_read, copy);
 }
 
 /**

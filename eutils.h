@@ -14,6 +14,8 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
+#define UNUSED(x) (void)x
+
 /* The best appoach would be to use struct __kernel_sockaddr_storage
  * defined in <linux/socket.h>, or struct sockaddr_storage defined in libc.
  * However, while XIA doesn't make into mainline, these structs are only
