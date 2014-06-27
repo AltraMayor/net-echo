@@ -18,8 +18,14 @@ eclicork : eclicork.o eutils.o
 
 -include *.d
 
-PHONY : clean cscope
+PHONY : install clean cscope
+
+install: $(TARGETS)
+	echo 'IMPORTANT: make sure that libxia is installed!'
+	install -o root -g root -m 711 $(TARGETS) /bin
+
 clean :
 	rm -f *.o *.d cscope.out $(TARGETS)
+
 cscope :
 	cscope -b *.c *.h
